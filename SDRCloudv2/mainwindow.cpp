@@ -18,7 +18,9 @@ MainWindow::MainWindow(QWidget *parent)
 	// 显式初始化成员变量
 	m_QueueBufX = new QQueue<qreal>;
 	m_QueueBufY = new QQueue<qreal>;
-	m_dongle = new RTLDevice(m_QueueBufX, m_QueueBufY, 0);
+	m_bufX = new QVector<qreal>;
+	m_bufY = new QVector<qreal>;
+	m_dongle = new RTLDevice(m_QueueBufX, m_QueueBufY, m_bufX, m_bufY, 0);
 	updWaveTimer = new QTimer;
 
 	connectSignalSlot();	// 代码连接信号和槽
@@ -135,7 +137,17 @@ void MainWindow::openRTL(bool b)
 
 void MainWindow::updateWave()
 {
-	figure->graph(0)->setData(m_QueueBufX->toVector(), m_QueueBufY->toVector());
+	//QVector<qreal> x(101);
+	//QVector<qreal> y(100);
+	//for (int i = 0; i < 100; i++)
+	//{
+	//	x.append(i);
+	//	y.append(50);
+	//}
+	//x.append(100);
+	/*figure->graph(0)->setData(m_QueueBufX->toVector(), m_QueueBufY->toVector(), true);*/
+	/*figure->graph(0)->setData(x, y, true);*/
+	figure->graph(0)->setData(*m_bufX, *m_bufY, true);
 	figure->replot();
 }
 

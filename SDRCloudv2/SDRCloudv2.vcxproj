@@ -116,6 +116,7 @@
     <ClCompile Include="dialogopendev.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mainwindow.cpp" />
+    <ClCompile Include="readrtlthread.cpp" />
     <ClCompile Include="rtldevice.cpp" />
     <ClCompile Include="sdrdevice.cpp" />
   </ItemGroup>
@@ -148,6 +149,10 @@
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="readrtlthread.h">
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\workspace\Qt\SDRCloud\includes;.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets</IncludePath>
+      <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles;.;$(QTDIR)\include;.\GeneratedFiles\$(ConfigurationName);$(QTDIR)\include\QtCore;$(QTDIR)\include\QtGui;$(QTDIR)\include\QtANGLE;$(QTDIR)\include\QtWidgets</IncludePath>
+    </QtMoc>
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

@@ -53,6 +53,8 @@ private:	// 功能性成员变量
 	SDRDevice *m_dongle;	// SDR硬件即软件狗
 	QQueue<qreal> *m_QueueBufX;	// 数据缓冲队列
 	QQueue<qreal> *m_QueueBufY;
+	QVector<qreal> *m_bufX;	// 数据缓冲队列（vector形式），暂时设立，为了图形的显示
+	QVector<qreal> *m_bufY;
 	QTimer *updWaveTimer;
 };
 #endif // MAINWINDOW_H
