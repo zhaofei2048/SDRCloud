@@ -53,16 +53,16 @@
     <QtMoc Include="mainwindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="rtldevice.h">
-      <Filter>Source Files</Filter>
-    </QtMoc>
-    <QtMoc Include="sdrdevice.h">
-      <Filter>Source Files</Filter>
-    </QtMoc>
     <QtMoc Include="dialogopendev.h">
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="readrtlthread.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="rtldevice.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="sdrdevice.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
