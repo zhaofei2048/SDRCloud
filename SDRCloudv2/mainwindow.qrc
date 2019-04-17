@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/icon">
+        <file>Resources/ASX_Cancel_blue_16x.png</file>
+        <file>Resources/sdrcloud.ico</file>
+        <file>Resources/refresh.ico</file>
+        <file>Resources/rtl.ico</file>
+    </qresource>
+</RCC>

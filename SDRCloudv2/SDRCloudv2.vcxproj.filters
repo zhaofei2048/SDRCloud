@@ -33,43 +33,52 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="sdrcloud.cpp">
+    <ClCompile Include="mainwindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rtldevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="sdrdevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ploter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="audioiodevice.cpp">
+    <ClCompile Include="dialogopendev.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <QtMoc Include="sdrcloud.h">
+    <QtMoc Include="mainwindow.h">
       <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="rtldevice.h">
+      <Filter>Source Files</Filter>
     </QtMoc>
     <QtMoc Include="sdrdevice.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files</Filter>
     </QtMoc>
-    <QtMoc Include="audioiodevice.h">
+    <QtMoc Include="dialogopendev.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="sdrcloud.ui">
+    <QtUic Include="mainwindow.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="dialogopendev.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
   <ItemGroup>
-    <QtRcc Include="sdrcloud.qrc">
+    <QtRcc Include="mainwindow.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ploter.h">
+    <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="SDRCloudv2.rc" />
   </ItemGroup>
 </Project>
