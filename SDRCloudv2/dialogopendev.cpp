@@ -1,10 +1,10 @@
 #include "dialogopendev.h"
 #include <QListWidget>
 #include <QListWidgetItem>
-#include "rtldevice.h"
+#include "rtldevice2.h"
 
 
-DialogOpenDev::DialogOpenDev(SDRDevice *dongle, QWidget *parent)
+DialogOpenDev::DialogOpenDev(RtlDevice *dongle, QWidget *parent)
 	: QDialog(parent),
 	m_dongle(dongle)
 {
@@ -55,10 +55,12 @@ void DialogOpenDev::setBtnOKState()
 void DialogOpenDev::openRTL()
 {
 	quint32 count = 0;
+	QVector<QString> names;
 	QListWidgetItem *item = nullptr;
 	
 
-	count = m_dongle->getDeviceCount();
+	/*count = m_dongle->getDeviceCount();*/
+	m_dongle->getDeviceList(names, count);
 	if (count == 0)	// 未找到设备
 	{
 		setHint(tr("未找到RTL设备，请插入RTL设备后再尝试刷新按钮！"));
@@ -69,7 +71,7 @@ void DialogOpenDev::openRTL()
 		QString devName;
 		for (quint32 i = 0; i < count; i++)	// 依次获取设备名称添加到列表中显示
 		{
-			devName = m_dongle->getDeviceName(i);
+			devName = names[i];
 			item = new QListWidgetItem(QString::asprintf("index:[%d]=>name:", i) + devName);
 			item->setData(Qt::UserRole, QVariant(i));
 			addListItem(item);

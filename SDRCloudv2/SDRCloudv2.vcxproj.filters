@@ -48,6 +48,24 @@
     <ClCompile Include="readrtlthread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="rtldriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rwturnlock.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rtldevice2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="worker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="readwritebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="readdataworker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="mainwindow.h">
@@ -56,13 +74,16 @@
     <QtMoc Include="dialogopendev.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="readrtlthread.h">
+    <QtMoc Include="rtldriver.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="rtldevice.h">
+    <QtMoc Include="rtldevice2.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="sdrdevice.h">
+    <QtMoc Include="worker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="readdataworker.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -81,6 +102,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rwturnlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rtldevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sdrdevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="readrtlthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="readwritebuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
