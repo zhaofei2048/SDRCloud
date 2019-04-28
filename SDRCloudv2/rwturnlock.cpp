@@ -23,8 +23,8 @@ RWTurnLock::~RWTurnLock()
 void RWTurnLock::lockForWrite()
 {
 	bufMutex->lock();
-	if (isFull == true)
-	{
+	if (isFull == true)	// 注意正规的写法应该使用while对条件进行判断，但这里我确保线程被唤醒时它就该执行一次
+	{					// 同时也是为了防止其中一个线程退出时，而另一个线程被永久阻塞下去
 		bufNotFull->wait(bufMutex);
 	}
 	bufMutex->unlock();

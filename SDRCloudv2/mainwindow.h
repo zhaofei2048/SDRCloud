@@ -10,6 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <QThread>
+#include <QReadWriteLock>
+#include <QBuffer>
+#include <QAudioOutput>
+
 
 QT_BEGIN_NAMESPACE
 class QAction;
@@ -32,6 +36,9 @@ QT_FORWARD_DECLARE_CLASS(QCustomPlot)
 QT_FORWARD_DECLARE_CLASS(RtlDevice)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 QT_FORWARD_DECLARE_CLASS(QToolBox)
+QT_FORWARD_DECLARE_CLASS(Demodulator)
+QT_FORWARD_DECLARE_CLASS(QAudioOutput)
+QT_FORWARD_DECLARE_CLASS(PCMIODevice)
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -42,26 +49,35 @@ public:
 	MainWindow(FILE *logFile, QWidget *parent = Q_NULLPTR);
 	~MainWindow();
 	friend class UpdateFigureBufWorker;
+	friend class UpdateAudioBufWorker;
 
 private:	// 私有成员函数
 	void iniUI();
 	void iniLeftToolBoxUI();
+	void iniStatusBar();
 	void connectSignalSlot();
 	void console(const QString &info);
 	void displayDefaultConfig();	// 将默认参数显示到界面组件上  
 	void initFigure();	// 此函数在程序声明周期类，只应该执行1次
-	void updateFigureBuf();	// 此函数会阻塞
+	void initAudioPlayer();
 	void stopReceiveData();
 	void startReceiveData();
-
+	void startAudioPlay();
+	void stopAudioPlay();
+	
+private:	// 这些函数不要直接调用，请调用其接口函数
+	void updateFigureBuf();	// 此函数会阻塞
+	void updateAudioBuf();	// 此函数会阻塞不应该直接调用
 private slots:	//私有槽函数
 	void openRTL(bool b);
 	void closeRTL(bool b);
 	void updatePsdWave();	// 更新功率谱图
 	void showMenuRTL();
 	void btnStartPlaySlot();	// 开始播放按钮槽函数
+	void handleStateChanged(QAudio::State newState);
 signals:
 	void updateFigureBufSignal(MainWindow *w);
+	void updateAudioBufSignal(MainWindow *w);
 private:	// 界面组件成员变量
 	Ui::MainWindowClass ui;
 	// 需要一直保存的界面组件
@@ -82,6 +98,7 @@ private:	// 界面组件成员变量
 	QCheckBox *chkboxRtlAGC;
 	QComboBox *comboxSampleRate;
 	QComboBox *comboxSampleMode;
+	QLabel *labDeviceName;
 	
 
 private:	// 功能性成员变量
@@ -92,19 +109,37 @@ private:	// 功能性成员变量
 	//QVector<qreal> *m_bufY;
 	QTimer *updateFigureTimer;
 	RtlDevice *m_dongle;	// RTL硬件对象
+	Demodulator *m_demod;	// 解调器对象
 	FILE *m_logFile;
 	QQueue<qreal> m_figureBufX;
 	QQueue<qreal> m_figureBufY;
 	QVector<qreal> m_figureX;
 	QVector<qreal> m_figureY;
+	QReadWriteLock m_figLock;
 	quint32 m_figureBufLen;
 	QThread updateFigureBufThread;	// 更新figure的buffer的线程
 	UpdateFigureBufWorker *updateFigureBufWorker;
+	UpdateAudioBufWorker *updateAudioBufWorker;
+	QThread updateAudioBufThread;	// 更新audio的buffer的线程
+	// 声音播放
+	QAudioOutput *m_audio;
+	/*QBuffer m_audioBuffer;*/
+	PCMIODevice *m_pcmIODevice;
 };
 
 
 
 class UpdateFigureBufWorker :public QObject
+{
+	Q_OBJECT
+public slots:
+	void doWork(MainWindow *w);
+signals:
+	void done();
+};
+
+
+class UpdateAudioBufWorker :public QObject
 {
 	Q_OBJECT
 public slots:

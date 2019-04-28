@@ -12,6 +12,10 @@
 #include <QSlider>
 #include <QCheckBox>
 #include <QComboBox>
+#include "demodulator.h"
+#include "pcmiodevice.h"
+
+
 
 
 //const QString MainWindow::demodMethodNames[8] = { tr("NFM"), tr("WFM"),tr("AM"),tr("DSB"),tr("USB"),tr("LSB") ,tr("RAW"),tr("CW") };
@@ -34,6 +38,7 @@ MainWindow::MainWindow(FILE *logFile, QWidget *parent)
 	//m_dongle = new RTLDevice(m_QueueBufX, m_QueueBufY, m_bufX, m_bufY, 0);
 	//updWaveTimer = new QTimer;
 	m_dongle = new RtlDevice(nullptr);
+	m_demod = new Demodulator(m_dongle);
 
 
 	connectSignalSlot();	// 代码连接信号和槽
@@ -78,6 +83,10 @@ void MainWindow::iniUI()
 	addDockWidget(Qt::BottomDockWidgetArea, dockConsole, Qt::Vertical);
 
 	iniLeftToolBoxUI();
+	iniStatusBar();
+
+	// 初始化音频播放
+	initAudioPlayer();
 }
 
 void MainWindow::connectSignalSlot()
@@ -121,6 +130,7 @@ void MainWindow::openRTL(bool b)
 				// 设备打开成功后应该在这里将设备状态更改，否则会重复打开
 				if (m_dongle->open(index))
 				{
+					labDeviceName->setText(QString("设备:%0").arg(m_dongle->getDeviceName()));
 					displayDefaultConfig();
 				}
 				else
@@ -193,6 +203,7 @@ void MainWindow::closeRTL(bool b)
 	Q_UNUSED(b);
 	if (m_dongle->close())
 	{
+		labDeviceName->setText(tr("设备:未打开"));
 		console(QString("成功关闭RTL设备"));
 	}
 	else
@@ -331,6 +342,11 @@ void MainWindow::iniLeftToolBoxUI()
 
 }
 
+void MainWindow::iniStatusBar()
+{
+	labDeviceName = new QLabel(tr("设备:未打开"));
+	statusBar()->addWidget(labDeviceName);
+}
 MainWindow::~MainWindow()
 {
 	if (m_logFile != nullptr)
@@ -342,6 +358,10 @@ MainWindow::~MainWindow()
 	{
 		closeRTL(true);
 	}
+
+	updateFigureBufThread.wait();	// 需要等待子线程退出，否则过早结束程序会出错
+	updateAudioBufThread.wait();
+	qDebug() << "updateFigureBufThread quit";
 }
 
 void MainWindow::displayDefaultConfig()
@@ -395,7 +415,7 @@ void MainWindow::initFigure()
 	figure->xAxis->setLabel(tr("time"));
 	figure->yAxis->setLabel(tr("signal"));
 	figure->xAxis->setRange(0, m_figureBufLen);
-	figure->yAxis->setRange(-1.0, 1.0);
+	figure->yAxis->setRange(-130.0, 130.0);
 	setCentralWidget(figure);
 	
 	// 更新figure buffer的线程
@@ -418,11 +438,11 @@ void MainWindow::updateFigureBuf()
 	quint32 step = 20;
 	while (true)
 	{
-		if (m_dongle->getState() != RtlDevice::RUNNING)	// 如果硬件都没有在运行，那也就没有必要读取更新数据了
+		if (m_dongle->getState() == RtlDevice::CANCELLING)	// 如果取消了数据读取，准备退出
 		{
 			break;
 		}
-		m_dongle->getData(data);	// 此函数会被阻塞
+		m_demod->getData(data);	// 此函数会被锁阻塞,getData是锁安全的
 
 		for (int i = 0; i < data.count(); i = i+step)
 		{
@@ -441,17 +461,19 @@ void MainWindow::updateFigureBuf()
 				m_figureBufX.enqueue(i);
 			}
 		}
-
+		m_figLock.lockForWrite();
 		m_figureX = m_figureBufX.toVector();
 		m_figureY = m_figureBufY.toVector();
+		m_figLock.unlock();
 
 	}
 }
 
 void MainWindow::updatePsdWave()
 {
-	emit updateFigureBufSignal(this);	// 这里会立即返回不会阻塞
+	m_figLock.lockForRead();
 	figure->graph(0)->setData(m_figureX, m_figureY, true);
+	m_figLock.unlock();
 	figure->replot();
 }
 
@@ -459,9 +481,11 @@ void MainWindow::startReceiveData()
 {
 	qDebug() << "start receive data";
 	m_dongle->startReadData();	// 开始从硬件中读取数据
+	m_demod->startDemodFM();	//解调器开始解调
 	qDebug() << "start the timer for update the figure";
 	if (updateFigureTimer->isActive() == false)
 	{
+		emit updateFigureBufSignal(this);	// 这里会立即返回不会阻塞，这个信号不用重复发送
 		updateFigureTimer->start(0);	// 尽快开始更新figure
 	}
 }
@@ -478,11 +502,13 @@ void MainWindow::btnStartPlaySlot()
 {
 	if (m_dongle->getState() == RtlDevice::RUNNING)
 	{	
+		stopAudioPlay();
 		stopReceiveData();
 	}
 	else
 	{
 		startReceiveData();
+		startAudioPlay();
 	}
 }
 
@@ -490,4 +516,89 @@ void MainWindow::stopReceiveData()
 {
 	updateFigureTimer->stop();
 	m_dongle->stopReadData();
+}
+
+void MainWindow::initAudioPlayer()
+{
+	/*m_audioBuffer.open(QIODevice::ReadWrite);*/
+	m_pcmIODevice = new PCMIODevice();
+	QAudioFormat format;
+	// Set up the format, eg.
+	format.setSampleRate(44100);
+	format.setChannelCount(1);
+	format.setSampleSize(8);
+	format.setCodec("audio/pcm");
+	format.setByteOrder(QAudioFormat::LittleEndian);
+	format.setSampleType(QAudioFormat::UnSignedInt);
+
+	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
+	if (!info.isFormatSupported(format)) {
+		qWarning() << "Raw audio format not supported by backend, cannot play audio.";
+		return;
+	}
+
+	m_audio = new QAudioOutput(format, this);
+	connect(m_audio, SIGNAL(stateChanged(QAudio::State)), this, SLOT(handleStateChanged(QAudio::State)));
+
+	updateAudioBufWorker = new UpdateAudioBufWorker();
+	updateAudioBufWorker->moveToThread(&updateAudioBufThread);
+	connect(this, &MainWindow::updateAudioBufSignal, updateAudioBufWorker, &UpdateAudioBufWorker::doWork);
+	updateAudioBufThread.start();
+}
+
+void MainWindow::handleStateChanged(QAudio::State newState)
+{
+	switch (newState) {
+	case QAudio::IdleState:
+		// Finished playing (no more data)
+		m_audio->stop();
+		/*m_sourceFile.close();*/
+		//delete m_audio;
+		break;
+
+	case QAudio::StoppedState:
+		// Stopped for other reasons
+		if (m_audio->error() != QAudio::NoError) {
+			// Error handling
+		}
+		break;
+
+	default:
+		// ... other cases as appropriate
+		break;
+	}
+}
+
+void UpdateAudioBufWorker::doWork(MainWindow *w)
+{
+	qDebug() << "start doing work(update audio buffer)";
+	w->updateAudioBuf();
+}
+
+void MainWindow::startAudioPlay()
+{
+	emit updateAudioBufSignal(this);
+	//m_audio->start(&m_audioBuffer);	// 启动声音播放
+	m_audio->start(m_pcmIODevice);	// 启动声音播放
+}
+
+void MainWindow::updateAudioBuf()
+{
+	char data[DEFAULT_BUFFERSIZE];
+	quint32 len = 0;
+	while (true)
+	{
+		if (m_dongle->getState() == RtlDevice::CANCELLING)
+		{
+			break;
+		}
+		m_demod->getDataByChar(data, len);
+		// 将数据写到audio buffer里
+		m_pcmIODevice->writeData(data, len);
+	}
+}
+
+void MainWindow::stopAudioPlay()
+{
+	m_audio->stop();
 }

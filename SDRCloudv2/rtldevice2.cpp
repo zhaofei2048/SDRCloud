@@ -10,6 +10,10 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	qDebug() << "rtlsdr call back is running";
 	RtlDevice *dev = (RtlDevice*)ctx;
 
+	if (dev->m_state == RtlDevice::CANCELLING)
+	{
+		return;
+	}
 	dev->m_data.writeChar(buf, (quint32)len);
 }
 const QString RtlDevice::sampleModeStrings[3] =
@@ -49,6 +53,8 @@ RtlDevice::RtlDevice(QObject *parent)
 
 RtlDevice::~RtlDevice()
 {
+	readDataThread.wait();	// 需要等待子线程退出，否则过早结束程序会出错
+	qDebug() << "readDataThread quit";
 }
 
 void RtlDevice::readDataStopSlot()
@@ -83,6 +89,11 @@ bool RtlDevice::getDeviceList(QVector<QString> &names, quint32 &count)
 		names.append(name);
 	}
 	return count == 0 ? false : true;
+}
+
+QString RtlDevice::getDeviceName()
+{
+	return m_name;
 }
 
 bool RtlDevice::open(const quint32 index)
@@ -313,7 +324,7 @@ void RtlDevice::initRtl()
 	m_name = "";
 	m_tunerType = RtlDevice::Unknown;
 	m_tunerFreq = 90e6;	// 90MHz
-	m_tunerGain = 100;	// 10dB
+	m_tunerGain = 500;	// 10dB
 	m_tunerGainMode = RtlDevice::Manual;
 	m_isOffsetTuningOn = false;
 	m_sampleRate = DEFAULT_SAMPLERATES[4];	// 2.048MSPS
@@ -330,7 +341,7 @@ bool RtlDevice::stopRunning()
 		return true;
 	}
 	bool ret = false;
-	
+	m_state = RtlDevice::CANCELLING;
 	ret = RTLDriver::cancelAsync();
 
 	if (ret)
@@ -340,6 +351,7 @@ bool RtlDevice::stopRunning()
 	}
 	else
 	{
+		m_state = RtlDevice::LOST;	// 与设备失联
 		qDebug() << "failed to cancel read async";
 		return false;
 	}

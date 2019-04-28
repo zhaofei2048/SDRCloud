@@ -11,6 +11,7 @@ QT_FORWARD_DECLARE_CLASS(QMutex);
 // lockForWrite()
 // lockForRead
 // unlock
+// releaseLock
 class RWTurnLock
 {
 public:
@@ -19,6 +20,7 @@ public:
 	void lockForWrite();
 	void lockForRead();
 	void unlock();
+	//void releaseLock();	// 释放掉这个锁，方便下次再用，但确保再次上锁这段时间里不会再出现竞态条件
 private:
 	bool isFull;
 	QMutex *bufMutex;

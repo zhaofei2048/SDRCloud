@@ -45,6 +45,7 @@ public:
 		CLOSED = 0,
 		OPENED,
 		RUNNING,
+		CANCELLING,
 		LOST
 	}State;
 	
@@ -53,6 +54,7 @@ private:
 public:	// 暴露出的接口函数
 	static QVector<quint32> getDefaultSampleRateList();
 	bool getDeviceList(QVector<QString> &names, quint32 &count);
+	QString getDeviceName();
 	bool open(const quint32 index);	// 打开rtl设备，并获取rtl设备的基本信息
 	bool close();	// 关闭已经打开的rtl设备
 	bool startReadData();

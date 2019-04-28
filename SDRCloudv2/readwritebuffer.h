@@ -6,9 +6,11 @@
 #include <QVector>
 #include "rwturnlock.h"
 #include <QDebug>
+#include "constant.h"
 
 #define DEFAULT_BUFFERSIZE 16*16384
 
+static const quint32 downSampleRate = (quint32)(2*DEFAULT_SAMPLE_RATE / DEFAULT_AUDIO_RATE);
 template <class T>
 class ReadWriteBuffer
 {
@@ -42,25 +44,34 @@ ReadWriteBuffer<T>::ReadWriteBuffer()
 template<class T>
 void ReadWriteBuffer<T>::write(const T data[], quint32 len)
 {
+	quint32 j = 0;
 	m_lock.lockForWrite();
-	for (int i = 0; i < len; i++)
+	for (int i = 0; i < len-1; i = i+downSampleRate)
 	{
-		m_buf[i] = data[i];
+		m_buf[j] = data[i];	// 下采样时，确保I,Q完整
+		j++;
+		m_buf[j] = data[i + 1];
+		j++;
 	}
-	m_len = len;
+	m_len = j;
 	m_lock.unlock();
 }
 
 template<class T>
 void ReadWriteBuffer<T>::writeChar(const unsigned char *data, quint32 len)
 {
+	quint32 j = 0;
 	m_lock.lockForWrite();
 	qDebug() << "write char";
-	for (int i = 0; i < len; i++)
+	for (int i = 0; i < len-1; i = i + downSampleRate)	// 这里进行一定的下采样
 	{
-		m_buf[i] = (T)(((qint16)data[i] - 127.0) / 128.0);
+		/*m_buf[i] = (T)(((qint16)data[i] - 127.0) / 128.0);*/
+		m_buf[j] = (T)((qint16)data[i] - 127.0);
+		j++;
+		m_buf[j] = (T)((qint16)data[i + 1] - 127.0);	// 确保i+1不要越界
+		j++;
 	}
-	m_len = len;
+	m_len = j;
 	m_lock.unlock();
 }
 

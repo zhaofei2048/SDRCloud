@@ -66,6 +66,15 @@
     <ClCompile Include="readdataworker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="signaleval.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="demodulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pcmiodevice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="mainwindow.h">
@@ -84,6 +93,15 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="readdataworker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="signaleval.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="demodulator.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="pcmiodevice.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -117,6 +135,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="readwritebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="constant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
