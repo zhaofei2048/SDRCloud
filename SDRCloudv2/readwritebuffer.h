@@ -1,4 +1,7 @@
 #pragma once
+/*
+	轮流读写buffer类，自带锁
+*/
 #ifndef READWRITEBUFFER_H
 #define READWRITEBUFFER_H
 
@@ -10,7 +13,7 @@
 
 #define DEFAULT_BUFFERSIZE 16*16384
 
-static const quint32 downSampleRate = (quint32)(2*DEFAULT_SAMPLE_RATE / DEFAULT_AUDIO_RATE);
+static const quint32 downSampleRate = (quint32)(DEFAULT_SAMPLE_RATE / DEFAULT_AUDIO_RATE);
 template <class T>
 class ReadWriteBuffer
 {
@@ -62,7 +65,7 @@ void ReadWriteBuffer<T>::writeChar(const unsigned char *data, quint32 len)
 {
 	quint32 j = 0;
 	m_lock.lockForWrite();
-	qDebug() << "write char";
+	//qDebug() << "write char";
 	for (int i = 0; i < len-1; i = i + downSampleRate)	// 这里进行一定的下采样
 	{
 		/*m_buf[i] = (T)(((qint16)data[i] - 127.0) / 128.0);*/
@@ -79,7 +82,7 @@ template<class T>
 void ReadWriteBuffer<T>::read(QVector<T>& data)
 {
 	m_lock.lockForRead();
-	qDebug() << "ReadWrite buffer read ";
+	//qDebug() << "ReadWrite buffer read ";
 	data.resize(0);
 	for (int i = 0; i < m_len; i++)
 	{

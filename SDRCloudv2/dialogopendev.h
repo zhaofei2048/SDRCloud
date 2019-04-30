@@ -1,4 +1,7 @@
 #pragma once
+/*
+	打开设备对话框类
+*/
 #ifndef DIALOGOPENDEV_H
 #define DIALOGOPENDEV_H
 

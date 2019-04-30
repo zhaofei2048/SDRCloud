@@ -1,4 +1,7 @@
 #pragma once
+/*
+	解调器类
+*/
 #ifndef DEMODULATOR_H
 #define DEMODULATOR_H
 
@@ -22,7 +25,7 @@ public:
 public:	// 暴露出去的接口
 	void startDemodFM();	// 请确保硬件正常工作时再调用我进行解调，否则可能出现线程一直阻塞下去的错误
 	void getData(QVector<qreal> &data);	// 获取解调后的数据
-	void getDataByChar(char data[], quint32 len);
+	void getDataByChar(char data[], quint32 &len);
 
 private:
 	void m_demodFM();

@@ -1,5 +1,5 @@
 #include "readdataworker.h"
-#include "rtldevice2.h"
+#include "rtldevice.h"
 #include <QDebug>
 void ReadDataWorker::doWork(RtlDevice *dev)
 {

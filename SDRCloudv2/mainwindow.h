@@ -1,4 +1,7 @@
 #pragma once
+/*
+	程序主窗口类
+*/
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 #pragma execution_character_set("utf-8")
@@ -64,6 +67,7 @@ private:	// 私有成员函数
 	void startReceiveData();
 	void startAudioPlay();
 	void stopAudioPlay();
+	void suspendAudioPlay();
 	
 private:	// 这些函数不要直接调用，请调用其接口函数
 	void updateFigureBuf();	// 此函数会阻塞
@@ -122,6 +126,7 @@ private:	// 功能性成员变量
 	UpdateAudioBufWorker *updateAudioBufWorker;
 	QThread updateAudioBufThread;	// 更新audio的buffer的线程
 	// 声音播放
+	QAudioFormat format;
 	QAudioOutput *m_audio;
 	/*QBuffer m_audioBuffer;*/
 	PCMIODevice *m_pcmIODevice;

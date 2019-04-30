@@ -1,4 +1,7 @@
 #pragma once
+/*
+	设备驱动接口
+*/
 #ifndef RTLDRIVER_H
 #define RTLDRIVER_H
 

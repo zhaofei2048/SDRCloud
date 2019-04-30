@@ -3,7 +3,7 @@
 #include <QTextEdit>
 #include <QMessageBox>
 #include "qcustomplot.h"
-#include "rtldevice2.h"
+#include "rtldevice.h"
 #include "dialogopendev.h"
 #include <QTimer>
 #include <QToolBox>
@@ -39,7 +39,8 @@ MainWindow::MainWindow(FILE *logFile, QWidget *parent)
 	//updWaveTimer = new QTimer;
 	m_dongle = new RtlDevice(nullptr);
 	m_demod = new Demodulator(m_dongle);
-
+	// 初始化音频播放
+	initAudioPlayer();
 
 	connectSignalSlot();	// 代码连接信号和槽
 	
@@ -85,8 +86,6 @@ void MainWindow::iniUI()
 	iniLeftToolBoxUI();
 	iniStatusBar();
 
-	// 初始化音频播放
-	initAudioPlayer();
 }
 
 void MainWindow::connectSignalSlot()
@@ -349,6 +348,7 @@ void MainWindow::iniStatusBar()
 }
 MainWindow::~MainWindow()
 {
+	stopAudioPlay();
 	if (m_logFile != nullptr)
 	{
 		fclose(m_logFile);
@@ -358,7 +358,7 @@ MainWindow::~MainWindow()
 	{
 		closeRTL(true);
 	}
-
+	
 	updateFigureBufThread.wait();	// 需要等待子线程退出，否则过早结束程序会出错
 	updateAudioBufThread.wait();
 	qDebug() << "updateFigureBufThread quit";
@@ -435,8 +435,8 @@ void MainWindow::initFigure()
 void MainWindow::updateFigureBuf()
 {
 	QVector<qreal> data;
-	quint32 step = 20;
-	while (true)
+	quint32 step = 1;
+	while (true)	// 这里可以进行优化
 	{
 		if (m_dongle->getState() == RtlDevice::CANCELLING)	// 如果取消了数据读取，准备退出
 		{
@@ -502,11 +502,13 @@ void MainWindow::btnStartPlaySlot()
 {
 	if (m_dongle->getState() == RtlDevice::RUNNING)
 	{	
-		stopAudioPlay();
+		qDebug() << "btn STOP";
+		suspendAudioPlay();
 		stopReceiveData();
 	}
 	else
 	{
+		qDebug() << "btn START";
 		startReceiveData();
 		startAudioPlay();
 	}
@@ -522,14 +524,13 @@ void MainWindow::initAudioPlayer()
 {
 	/*m_audioBuffer.open(QIODevice::ReadWrite);*/
 	m_pcmIODevice = new PCMIODevice();
-	QAudioFormat format;
 	// Set up the format, eg.
 	format.setSampleRate(44100);
 	format.setChannelCount(1);
 	format.setSampleSize(8);
 	format.setCodec("audio/pcm");
 	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setSampleType(QAudioFormat::UnSignedInt);
+	format.setSampleType(QAudioFormat::SignedInt);
 
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
 	if (!info.isFormatSupported(format)) {
@@ -551,15 +552,17 @@ void MainWindow::handleStateChanged(QAudio::State newState)
 	switch (newState) {
 	case QAudio::IdleState:
 		// Finished playing (no more data)
+		qDebug() << "audio play on idle";
 		m_audio->stop();
 		/*m_sourceFile.close();*/
-		//delete m_audio;
+		delete m_audio;
 		break;
 
 	case QAudio::StoppedState:
 		// Stopped for other reasons
 		if (m_audio->error() != QAudio::NoError) {
 			// Error handling
+			qDebug() << "Error on audio play";
 		}
 		break;
 
@@ -580,6 +583,7 @@ void MainWindow::startAudioPlay()
 	emit updateAudioBufSignal(this);
 	//m_audio->start(&m_audioBuffer);	// 启动声音播放
 	m_audio->start(m_pcmIODevice);	// 启动声音播放
+	qDebug() << "start play m_audio";
 }
 
 void MainWindow::updateAudioBuf()
@@ -598,7 +602,14 @@ void MainWindow::updateAudioBuf()
 	}
 }
 
+
 void MainWindow::stopAudioPlay()
 {
 	m_audio->stop();
+	delete m_audio;
+}
+
+void MainWindow::suspendAudioPlay()
+{
+	m_audio->suspend();
 }

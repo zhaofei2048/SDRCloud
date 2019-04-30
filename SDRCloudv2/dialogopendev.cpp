@@ -1,7 +1,7 @@
 #include "dialogopendev.h"
 #include <QListWidget>
 #include <QListWidgetItem>
-#include "rtldevice2.h"
+#include "rtldevice.h"
 
 
 DialogOpenDev::DialogOpenDev(RtlDevice *dongle, QWidget *parent)

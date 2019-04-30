@@ -1,4 +1,7 @@
 #pragma once
+/*
+	¶ÁĞ´ÂÖÁ÷ËøÀà
+*/
 #ifndef RWTURNLOCK_H
 #define RWTURNLOCK_H
 

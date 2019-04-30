@@ -1,5 +1,6 @@
 #include "demodulator.h"
-#include "rtldevice2.h"
+#include "rtldevice.h"
+#include "qmath.h"
 Demodulator::Demodulator(RtlDevice *dongle, QObject *parent)
 	: QObject(parent),
 	m_preQdivI(0.0),
@@ -33,14 +34,16 @@ void Demodulator::getData(QVector<qreal>& data)
 	}
 	m_signalLock.unlock();
 }
-void Demodulator::getDataByChar(char data[], quint32 len)
+void Demodulator::getDataByChar(char data[], quint32 &len)
 {
 	// 考虑这里是否需要一定的条件等待，避免重复读取数据
 	m_signalLock.lockForRead();
-	for (int i = 0; i < m_signalLen; i++)
+	int i = 0;
+	for (i = 0; i < m_signalLen; i++)
 	{
-		data[i] = (char)m_signal[i];
+		data[i] = char(m_signal[i]);
 	}
+	len = i;
 	m_signalLock.unlock();
 }
 
@@ -80,6 +83,20 @@ void Demodulator::m_demodFM()
 			j++;
 			QdivIn_1 = QdivIn;	// Q(n) / I(n) => Q(n-1) / I(n-1)
 		}
+
+		//for (int i = 0; i < m_unDemodSignal.count() - 1; i = i + 2)
+		//{
+		//	//QdivIn = m_unDemodSignal[i + 1] / (m_unDemodSignal[i] + numZero);	// = Q(n) / I(n)
+		//	//m_signal[j] = (QdivIn - QdivIn_1) / (1.0 + QdivIn * QdivIn);
+		//	//if (m_signal[j] > max)
+		//	//{
+		//	//	max = m_signal[j];	// 这样归一化是粗暴的
+		//	//}
+		//	//m_signal[j] = 127.0*m_signal[j] / max;	// 缩小100倍
+		//	m_signal[j] = 50.0*qCos(2.0*3.14*0.003*j)+ m_unDemodSignal[1];
+		//	j++;
+		//	//QdivIn_1 = QdivIn;	// Q(n) / I(n) => Q(n-1) / I(n-1)
+		//}
 		m_signalLen = j;
 		m_signalLock.unlock();
 		// 这里要考虑是否加个条件变量，避免读者重复读取一样的数据
