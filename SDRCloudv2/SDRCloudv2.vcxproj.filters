@@ -45,9 +45,6 @@
     <ClCompile Include="rwturnlock.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="readdataworker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="signaleval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -58,6 +55,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="rtldevice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="soundplayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="figure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="demod_core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,9 +77,6 @@
     <QtMoc Include="rtldriver.h">
       <Filter>Header Files</Filter>
     </QtMoc>
-    <QtMoc Include="readdataworker.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
     <QtMoc Include="signaleval.h">
       <Filter>Header Files</Filter>
     </QtMoc>
@@ -84,6 +87,12 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="rtldevice.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="soundplayer.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="figure.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -111,6 +120,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="constant.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="demod_core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -27,6 +27,7 @@ private:
 	char m_buffer[DEFAULT_MAX_AUDIO_BUFFER_SIZE];
 	qint64 curRead;	// 在buffer中当前应读写的位置
 	qint64 curWrite;
+	quint64 validDataLength;
 
 	// 不必要的锁
 

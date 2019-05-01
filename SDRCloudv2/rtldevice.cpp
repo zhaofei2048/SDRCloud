@@ -1,7 +1,6 @@
 #include "rtldevice.h"
 #include "rtldriver.h"
 #include <QDebug>
-#include "readdataworker.h"
 
 
 // 此函数仅用于异步数据读取的回调
@@ -10,7 +9,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	//qDebug() << "rtlsdr call back is running";
 	RtlDevice *dev = (RtlDevice*)ctx;
 
-	if (dev->m_state == RtlDevice::CANCELLING)
+	if (dev->m_state == RtlDevice::CANCELING)
 	{
 		return;
 	}
@@ -45,25 +44,17 @@ RtlDevice::RtlDevice(QObject *parent)
 	// 初始化数据读取的线程，以后只需要触发readDataSignal就可以读数据
 	worker = new ReadDataWorker();
 	worker->moveToThread(&readDataThread);
-	connect(&readDataThread, &QThread::finished, worker, &QObject::deleteLater);
-	connect(this, &RtlDevice::readDataSignal, worker, &ReadDataWorker::doWork);
-	connect(worker, &ReadDataWorker::done, this, &RtlDevice::readDataStopSlot);
+	/*connect(&readDataThread, &QThread::finished, worker, &QObject::deleteLater);*/
+	connect(this, &RtlDevice::m_readDataSignal, worker, &ReadDataWorker::doWork);
+	/*connect(worker, &ReadDataWorker::done, this, &RtlDevice::readDataStopSlot);*/
 	readDataThread.start();
 }
 
 RtlDevice::~RtlDevice()
 {
+	readDataThread.quit();
 	readDataThread.wait();	// 需要等待子线程退出，否则过早结束程序会出错
 	qDebug() << "readDataThread quit";
-}
-
-void RtlDevice::readDataStopSlot()
-{
-	if (m_state != RtlDevice::RUNNING)
-	{
-		qDebug() << "exception when stop reading data, we assert m_state=RUNNING";
-	}
-	m_state = RtlDevice::OPENED;
 }
 
 QVector<quint32> RtlDevice::getDefaultSampleRateList()
@@ -98,34 +89,27 @@ QString RtlDevice::getDeviceName()
 
 bool RtlDevice::open(const quint32 index)
 {
-	bool r;
+	bool r = false;
 	if (m_state != RtlDevice::CLOSED)
 	{
 		return false;	// 如果已经有设备被打开
 	}
-	initRtl();
+	//initRtl();
+
 	r = RTLDriver::open(index);
 	if (r == false)
 	{
+		m_state = RtlDevice::LOST;
+		emit lostDeviceSignal(tr("failed to open the rtl device"));
 		return false;	// 设备打开失败
-		qDebug() << "failed to open the rtl device";
 	}
+
 	m_state = RtlDevice::OPENED;
 	quint32 gainsCount = 0;
 
 	m_name = RTLDriver::getDeviceName(index);	// 初始化当前设备名字
 	gainsCount = RTLDriver::getTunerGains(m_tunerGainList);	// 初始化设备支持的增益列表
-	if (gainsCount <= 0)
-	{
-		qDebug() << "failed to get the gain list";
-	}
-	else
-	{
-		qDebug() << QString("device supports ") + QString::number(gainsCount) + " gains";
-		for (int i = 0; i < gainsCount; i++) {
-			qDebug() <<  QString::number(m_tunerGainList[i] / 10.0) + " dB";
-		}
-	}
+
 	bool ret = false;
 
 	// 获取默认晶振频率
@@ -175,7 +159,7 @@ bool RtlDevice::open(const quint32 index)
 	m_sampleRate = RTLDriver::getSampleRate();
 	qDebug() << QString("default sample rate is set: ") + QString::number(m_sampleRate) + " SPS";
 
-	return true;	// 设备发开是成功的
+	return true;	// 设备打开是成功的
 	
 }
 
@@ -185,10 +169,11 @@ bool RtlDevice::close()
 	{
 		return true;	// 如果设备已经被关闭
 	}
-	if (m_state == RtlDevice::RUNNING)
+
+	if (m_state != RtlDevice::OPENED && m_state != RtlDevice::LOST)
 	{
-		// 如果设备还在运行读取数据那就停止它
-		stopRunning();
+		qDebug() << "can not close here";
+		return false;	// 设备不可关闭
 	}
 
 	bool ret = false;
@@ -200,7 +185,8 @@ bool RtlDevice::close()
 	}
 	else
 	{
-		qDebug() << "failed to close the RTL device";
+		m_state = RtlDevice::LOST;
+		emit lostDeviceSignal(tr("failed to close the RTL device"));
 	}
 	return ret;
 }
@@ -215,11 +201,15 @@ bool RtlDevice::startReadData()
 	if (m_isBufferReset == false)
 	{
 		bool ret = RTLDriver::resetBuffer();
-		if (ret)qDebug() << "buffer is reset";
-		m_isBufferReset = true;
+		if (ret)
+		{
+			qDebug() << "buffer is reset";
+			m_isBufferReset = true;
+		}
 	}
-	m_state = RtlDevice::RUNNING;
-	emit readDataSignal(this);
+
+	m_state = RtlDevice::RUNNING;	// 但不代表数据已经有效，因此取数据的操作务必等候信号的通知
+	emit m_readDataSignal(this);
 	return true;
 }
 
@@ -260,17 +250,17 @@ quint32 RtlDevice::getSampleRateIndex()
 	return 0;
 }
 
-bool RtlDevice::getOffsetTuningState()
+bool RtlDevice::isOffsetTuningOn()
 {
 	return m_isOffsetTuningOn;
 }
 
-bool RtlDevice::getTunerAgcState()
+bool RtlDevice::isTunerAgcOn()
 {
 	return !(bool)m_tunerGainMode;
 }
 
-bool RtlDevice::getRtlAgcState()
+bool RtlDevice::isRtlAgcOn()
 {
 	return m_isRtlAgcOn;
 }
@@ -299,7 +289,7 @@ void RtlDevice::getData(QVector<qreal>& data)
 
 bool RtlDevice::m_readData()
 {
-	qDebug() << "the start of m_readData";
+	/*qDebug() << "the start of m_readData";*/
 	if (m_state != RtlDevice::RUNNING && m_isBufferReset)
 	{
 		qDebug() << "failed to start read the data for the unreadable device";
@@ -307,12 +297,14 @@ bool RtlDevice::m_readData()
 	}
 
 	bool ret = false;
-	qDebug() << "be ready to read async";
+	/*qDebug() << "be ready to read async";*/
 	ret = RTLDriver::readAsync(rtlsdr_callback, this);
 	if (ret == false)
 	{
-		qDebug() << "error when read the data";
+		m_state = RtlDevice::LOST;
+		emit lostDeviceSignal(tr("error when read the data"));
 	}
+	qDebug() << "is reading data";
 	return ret;
 }
 
@@ -323,15 +315,15 @@ void RtlDevice::initRtl()
 	m_isBufferReset = false;
 	m_name = "";
 	m_tunerType = RtlDevice::Unknown;
-	m_tunerFreq = 97399092;	// 90MHz/89.1M
-	m_tunerGain = 500;	// 10dB
+	m_tunerFreq = CONFIG_DEFAULT_TUNNER_FREQ;	// 90MHz/89.1M   97399092
+	m_tunerGain = CONFIG_DEFAULT_TUNNER_GAIN;	// 50dB
 	m_tunerGainMode = RtlDevice::Manual;
 	m_isOffsetTuningOn = false;
-	m_sampleRate = DEFAULT_SAMPLERATES[4];	// 2.048MSPS /9:1.024MSPS
+	m_sampleRate = DEFAULT_SAMPLERATES[CONFIG_DEFAULT_SAMPLE_RATE_INDEX];	// 2.048MSPS /9:1.024MSPS
 	m_sampleMode = RtlDevice::Quadrature;
-	m_freqCorrection = 0;	// ppm
-	m_isRtlAgcOn = true;
-	m_downSampleRate1 = 1;
+	m_freqCorrection = CONFIG_DEFAULT_XTAL_FREQ_CORRECTION;	// ppm
+	m_isRtlAgcOn = CONFIG_DEFAULT_IS_RTL_AGC_ON;
+	m_downSampleRate1 = CONFIG_DOWNSAMPLE_RATE_BEFORE_DEMOD;
 }
 
 bool RtlDevice::stopRunning()
@@ -340,8 +332,9 @@ bool RtlDevice::stopRunning()
 	{
 		return true;
 	}
+
 	bool ret = false;
-	m_state = RtlDevice::CANCELLING;
+	m_state = RtlDevice::CANCELING;
 	ret = RTLDriver::cancelAsync();
 
 	if (ret)
@@ -352,10 +345,15 @@ bool RtlDevice::stopRunning()
 	else
 	{
 		m_state = RtlDevice::LOST;	// 与设备失联
-		qDebug() << "failed to cancel read async";
+		emit lostDeviceSignal(tr("failed to cancel read async"));
 		return false;
 	}
 }
 
+void ReadDataWorker::doWork(RtlDevice *dev)
+{
+	qDebug() << "start doing work(read data)";
+	dev->m_readData();
+}
 
 

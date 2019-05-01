@@ -12,8 +12,20 @@
 #include "constant.h"
 
 #define DEFAULT_BUFFERSIZE 16*16384
+static quint32 _DEFAULT_SAMPLERATES[11] = {
+	3200e3,	// Hz
+	2800e3,
+	2560e3,
+	2400e3,
+	2048e3,
+	1920e3,
+	1800e3,
+	1400e3,
+	1024e3,
+	900001,
+	250e3 };
 
-static const quint32 downSampleRate = (quint32)(DEFAULT_SAMPLE_RATE / DEFAULT_AUDIO_RATE);
+static quint32 downSampleRate = (quint32)(2*CONFIG_DOWNSAMPLE_RATE_BEFORE_DEMOD);
 template <class T>
 class ReadWriteBuffer
 {

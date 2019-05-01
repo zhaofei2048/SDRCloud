@@ -8,7 +8,6 @@
 #include <QThread>
 
 #define SAMPLE_RATE_COUNT 11
-QT_FORWARD_DECLARE_CLASS(ReadDataWorker)
 
 class RtlDevice : public QObject
 {
@@ -18,8 +17,9 @@ public:
 	RtlDevice(QObject *parent);
 	~RtlDevice();
 	friend void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx);
+	friend class ReadDataWorker;
 	static const QString sampleModeStrings[3];
-public:
+
 	typedef enum TunerType_flag
 	{
 		Unknown = 0,
@@ -29,12 +29,14 @@ public:
 		FC2580,
 		R820T
 	}TunerType;
+
 	typedef enum GainMode_flag
 	{
 		Automatic = 0,
 		Manual
 
 	}GainMode;
+
 	typedef enum SampleMode_flag
 	{
 		Quadrature = 0,
@@ -42,19 +44,24 @@ public:
 		DQ
 
 	}SampleMode;
+
 	typedef enum State_flag
 	{
 		CLOSED = 0,
 		OPENED,
 		RUNNING,
-		CANCELLING,
+		CANCELING,
 		LOST
 	}State;
-	
-private:
-	static const quint32 DEFAULT_SAMPLERATES[11];	// Hz
-public:	// 暴露出的接口函数
+
+public:	// 类方法
 	static QVector<quint32> getDefaultSampleRateList();
+
+private:
+	static const quint32 DEFAULT_SAMPLERATES[11];	// 默认采样率列表 Hz
+
+public:	// 对象方法
+	
 	bool getDeviceList(QVector<QString> &names, quint32 &count);
 	QString getDeviceName();
 	bool open(const quint32 index);	// 打开rtl设备，并获取rtl设备的基本信息
@@ -64,9 +71,9 @@ public:	// 暴露出的接口函数
 	State getState();
 	SampleMode getSampleMode();
 	quint32 getSampleRateIndex();
-	bool getOffsetTuningState();
-	bool getTunerAgcState();
-	bool getRtlAgcState();
+	bool isOffsetTuningOn();
+	bool isTunerAgcOn();
+	bool isRtlAgcOn();
 	void getTunerGainRange(quint32 &min, quint32 &max);
 	quint32 getTunerGain();
 	void getData(QVector<qreal>& data);
@@ -75,16 +82,15 @@ public:	// 暴露出的接口函数
 public:
 	bool m_readData();	// 这个函数应该由readDataSignal进行调用
 signals:
-	void readDataSignal(RtlDevice *dev);	// 此方法会阻塞，应该放到worker里执行
+	void lostDeviceSignal(const QString info);
+	void m_readDataSignal(RtlDevice *dev);	// 此方法会阻塞，应该放到worker里执行
 public slots:
-	void readDataStopSlot();
+	/*void readDataStopSlot();*/
 private:
 	void initRtl();
 	bool stopRunning();	// 停止数据的读取
 private:
 	// 设备的状态参数
-	//bool m_isOpen;	// 设备是否打开了
-	//bool m_isRunning;	// 设备正在运行读取数据
 	State m_state;	// 设备的状态
 	bool m_isBufferReset;	// 缓冲区是否复位
 	QString m_name;	// 设备的名称
@@ -112,4 +118,13 @@ private:
 	ReadWriteBuffer<qreal> m_data;
 	QThread readDataThread;
 	ReadDataWorker *worker;
+};
+
+class ReadDataWorker :public QObject
+{
+	Q_OBJECT
+public slots:
+	void doWork(RtlDevice *dev);
+signals:
+	void done();
 };
