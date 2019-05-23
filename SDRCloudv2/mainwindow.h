@@ -33,6 +33,7 @@ class QDoubleSpinBox;
 class QSlider;
 class QCheckBox;
 class QComboBox;
+class QProgressBar;
 QT_END_NAMESPACE
 //QT_FORWARD_DECLARE_CLASS(QCustomPlot)
 //QT_FORWARD_DECLARE_CLASS(SDRDevice)
@@ -44,6 +45,7 @@ QT_FORWARD_DECLARE_CLASS(Demodulator)
 //QT_FORWARD_DECLARE_CLASS(QAudioOutput)
 //QT_FORWARD_DECLARE_CLASS(PCMIODevice)
 QT_FORWARD_DECLARE_CLASS(SoundPlayer)
+QT_FORWARD_DECLARE_CLASS(ImageViewer)
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -51,7 +53,7 @@ class MainWindow : public QMainWindow
 private:
 	static const QString demodMethodNames[8];
 public:
-	MainWindow(FILE *logFile, QWidget *parent = Q_NULLPTR);
+	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
 	friend class UpdateFigureBufWorker;
 	
@@ -72,6 +74,7 @@ private slots:	//私有槽函数
 	void showMenuRTL();
 	void btnStartPlaySlot();	// 开始播放按钮槽函数
 	void lostDevice(QString info);
+	void openImgWindow(bool b);
 
 signals:
 	/*to do*/
@@ -96,14 +99,21 @@ private:	// 界面组件成员变量
 	QCheckBox *chkboxRtlAGC;
 	QComboBox *comboxSampleRate;
 	QComboBox *comboxSampleMode;
+	QComboBox *comboxRecord;
+	QProgressBar *pgbRecord;	// 显示录制时长的进度条
+	QPushButton *btnClearRecord; // 清空已录制内容
 	QLabel *labDeviceName;
+	//ImageViewer *imgViewer;
+
 	
 
 private:	// 功能性成员变量
 	RtlDevice *m_dongle;	// RTL硬件对象
 	Demodulator *m_demod;	// 解调器对象
 	SoundPlayer *m_player;	// 播放器
-	FILE *m_logFile;	// Debug日志文件
+	//FILE *m_logFile;	// Debug日志文件
+	quint32 m_recordTime;	// 音频录制时间
+	quint32 m_currentRecordTime;	// 已录制音频时间
 };
 
 

@@ -1,6 +1,7 @@
 #include "demod_core.h"
 #include "constant.h"
 #include "math.h"
+#include "aptformat.h"
 
 // here you can build and add Header files your self if you need.
 
@@ -26,4 +27,30 @@ void demod_core(double data_in[], unsigned int len_in, double data_out[], unsign
 	}
 	*len_out = i;
 	return;
+}
+
+// 近似包络解调算法
+void demodAM(int Fs, double data_in[], unsigned int len_in, double data_out[], unsigned int & len_out)
+{
+	static double phi = 2 * pi*Fc / Fs;
+	static double cosphi2 = 2*cos(phi);
+	static double sinphi = sin(phi);
+	static int samplesPerWord = round(Fs / Fw);
+	static int samplesPerPulse = round(Fs / Fpulse);
+	
+	static double xi_pre = data_in[0];
+	static double xi2_pre = xi_pre*xi_pre;
+	
+	double xi = 0.0;
+	double xi2 = 0.0;
+	int i = 0;
+	for (i = 1; i < len_in; i++) {
+		xi = data_in[i];
+		xi2 = xi * xi;
+		data_out[i - 1] = sqrt(xi2 + xi2_pre - cosphi2 * xi*xi_pre) / sinphi;
+		xi_pre = xi;
+		xi2_pre = xi2;
+	}
+
+	len_out = i - 1;
 }

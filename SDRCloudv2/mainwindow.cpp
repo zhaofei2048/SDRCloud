@@ -13,13 +13,17 @@
 #include <QSlider>
 #include <QCheckBox>
 #include <QComboBox>
+#include <QProgressBar>
 #include "demodulator.h"
 #include "soundplayer.h"
+//#include "imageviewer.h"
 
 const QString MainWindow::demodMethodNames[8] = { "NFM", "WFM","AM","DSB","USB","LSB" ,"RAW","CW" };
-MainWindow::MainWindow(FILE *logFile, QWidget *parent)
+MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent),
-	m_logFile(logFile)
+	m_recordTime(0),
+	m_currentRecordTime(0)
+	//imgViewer(nullptr)
 {
 	ui.setupUi(this);
 	setWindowTitle(tr("SDRCloud"));
@@ -88,6 +92,8 @@ void MainWindow::connectSignalSlot()
 	connect(ui.menuRTL, SIGNAL(aboutToShow()), this, SLOT(showMenuRTL()));
 	// 关联开始播放与在硬件上读取数据
 	connect(btnStartPlay, SIGNAL(clicked()), this, SLOT(btnStartPlaySlot()));
+	// 关联打开图像窗口
+	connect(ui.actOpenImgWindow, SIGNAL(triggered(bool)), this, SLOT(openImgWindow(bool)));
 
 }
 
@@ -202,7 +208,24 @@ void MainWindow::iniLeftToolBoxUI()
 		"}");
 	dockLeft->setTitleBarWidget(btnStartPlay);
 	leftToolBox = new QToolBox;
-	// 1.创建解调方式选择的单选按钮组
+
+	// 1.创建声音录制相关UI
+	QGroupBox *groupRecordUIs = new QGroupBox;
+	comboxRecord = new QComboBox;
+	btnClearRecord = new QPushButton;
+	QHBoxLayout *recordHLayout = new QHBoxLayout;
+	recordHLayout->addWidget(comboxRecord);
+	recordHLayout->addWidget(btnClearRecord);
+	QVBoxLayout *recordLayout = new QVBoxLayout;
+	pgbRecord = new QProgressBar;
+	recordLayout->addLayout(recordHLayout);
+	recordLayout->addWidget(pgbRecord);
+	recordLayout->addStretch();
+	groupRecordUIs->setLayout(recordLayout);
+	leftToolBox->addItem(groupRecordUIs, tr("录制设置"));
+
+
+	// 2.创建解调方式选择的单选按钮组
 	QHBoxLayout *demodLayout = new QHBoxLayout;
 	// 先创建四个列布局
 	QVBoxLayout *demodLayoutc[4];
@@ -231,7 +254,7 @@ void MainWindow::iniLeftToolBoxUI()
 	leftToolBox->setMinimumWidth(250);
 	leftToolBox->addItem(groupDemodBtns, tr("解调方法"));
 
-	// 2.创建tuner设置的相关按钮
+	// 3.创建tuner设置的相关按钮
 	QGroupBox *groupTunerSetting = new QGroupBox;
 	QVBoxLayout *tunerSettingLayout = new QVBoxLayout;
 	QHBoxLayout *tsLayout1 = new QHBoxLayout;
@@ -271,7 +294,7 @@ void MainWindow::iniLeftToolBoxUI()
 	groupTunerSetting->setLayout(tunerSettingLayout);
 	leftToolBox->addItem(groupTunerSetting, tr("tuner设置"));
 
-	// 2.创建rtl2832u设置的相关按钮
+	// 4.创建rtl2832u设置的相关按钮
 	QGroupBox *groupRtlSetting = new QGroupBox;
 	QVBoxLayout *rtlSettingLayout = new QVBoxLayout;
 
@@ -307,11 +330,11 @@ void MainWindow::iniStatusBar()
 }
 MainWindow::~MainWindow()
 {
-	if (m_logFile != nullptr)
-	{
-		fclose(m_logFile);
-		m_logFile = nullptr;
-	}
+	//if (m_logFile != nullptr)
+	//{
+	//	fclose(m_logFile);
+	//	m_logFile = nullptr;
+	//}
 	if (m_dongle->getState() != RtlDevice::CLOSED)
 	{
 		closeRTL(true);
@@ -396,4 +419,15 @@ void MainWindow::btnStartPlaySlot()
 void MainWindow::lostDevice(QString info)
 {
 	console("设备丢失（请关闭后重新插拔一下电视棒）："+info);
+}
+
+void MainWindow::openImgWindow(bool b)
+{
+	//if (imgViewer == nullptr) {
+	//	imgViewer = new ImageViewer();
+	//}
+	//imgViewer->setWindowTitle(tr("NOAA卫星云图处理"));
+	//imgViewer->show();
+	;
+
 }

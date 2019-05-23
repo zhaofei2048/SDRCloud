@@ -51,6 +51,7 @@
     <property name="title">
      <string>图像</string>
     </property>
+    <addaction name="actOpenImgWindow"/>
     <addaction name="actDebug"/>
    </widget>
    <widget class="QMenu" name="menuSate">
@@ -116,6 +117,14 @@
    </property>
    <property name="toolTip">
     <string>关闭打开的RTL设备</string>
+   </property>
+  </action>
+  <action name="actOpenImgWindow">
+   <property name="text">
+    <string>打开图像窗口...</string>
+   </property>
+   <property name="toolTip">
+    <string>打开图像窗口</string>
    </property>
   </action>
  </widget>

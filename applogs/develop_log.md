@@ -22,7 +22,7 @@ void Demodulator::getDataByChar(char data[], /*quint32 len应该是*/quint32 &le
 
 而此时**另一个版本**的却能发出声音，这是因为，它用的是m_buffer的replace函数，即将m_buffer中的len=0个字节的数据替换为解调后的数据，这就相当于对数据进行了追加，所以即使len=0也在传递解调的数据到扬声器中。之所以说是追加，是因为通过vs的内存检测可以看到这个程序**所耗内存是一直在增加**的。
 
-- *2019-4-30:*将VS2017中的Qt项目直接移植到另一台电脑时出现以下问题：
+- *2019-4-30*:将VS2017中的Qt项目直接移植到另一台电脑时出现以下问题：
 
 | 问题                          | 原因                         | 解决方法                                                     |
 | :---------------------------- | ---------------------------- | ------------------------------------------------------------ |
@@ -35,7 +35,7 @@ void Demodulator::getDataByChar(char data[], /*quint32 len应该是*/quint32 &le
 - *2019-5-1*：当我自己构建一个Figure类并继承自QCustomPlot类（第三方类库）时，在vs编译里报错：
 
   ```
-  "public: static struct QMetaObject const QCustomPlot::staticMetaObject" (?staticMetaObject@QCustomPlot@@2UQMetaObject@@B)
+  无法解析的外部符号"public: static struct QMetaObject const QCustomPlot::staticMetaObject" (?staticMetaObject@QCustomPlot@@2UQMetaObject@@B)
   ```
 
   注：QCustomPlot的头文件目录，Lib目录我都已设置，且可以正常使用QCustomPlot型成员变量，但如果我继承它就报上面的错。
@@ -46,11 +46,29 @@ void Demodulator::getDataByChar(char data[], /*quint32 len应该是*/quint32 &le
 
   说是因为*只有在预处理的时候定义了 QWT_DLL才能使用QWT的抛出类，否则就会出错！*
 
-  QCustomPlot的问题就不知道怎么办了...
+  **QCustomPlot继承问题的解决办法**：再仔细读一下QCustomPlot的文档，发现当以共享库的方式使用QCustomPlot时在引入"qcutomplot.h"前需要定义`QCUSTOMPLOT_USE_LIBRARY`，如下：
+
+  ```
+  #define QCUSTOMPLOT_USE_LIBRARY
+  #include "qcustomplot.h"
+  
+  QT_FORWARD_DECLARE_CLASS(QTimer)
+  QT_FORWARD_DECLARE_CLASS(Demodulator)
+  class Figure : public QCustomPlot
+  {
+  	Q_OBJECT
+  	...
+  ```
+
+  注：但如果不继承QCustomPlot类，即使不加那个宏定义，也可以正常使用QCustomPlot（目前还没遇到其他问题）。
+
+- *2019-5-1*：在更改解调（demodulator.cpp）的代码时出错，程序运行时崩溃，原因是一个读写锁read write lock被多次unlock，而发生的原因是有一个读者采用的是tryLockForRead。
 
 
+- *2019-5-18*:程序运行总是到return a.exec()处提示触发了中端点，或者跳到Qt内部的一个数组对齐那儿，反正都提示访问地址0xFFFFFF...发生冲突，最后找到原因是因为数组越界了。
+```
+
+m_buffer(new char[WAVE_FILE_BUFFER_SIZE-4096])
 
 
-
-
-
+应该写成+4096的结果写成了-4096，导致了分配的空间比想要用的空间（以为是WAVE_FILE_BUFFER_SIZE）要小，所以会越界。

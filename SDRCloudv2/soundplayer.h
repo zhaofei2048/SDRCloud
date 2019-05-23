@@ -12,7 +12,7 @@
 
 QT_FORWARD_DECLARE_CLASS(PCMIODevice)
 QT_FORWARD_DECLARE_CLASS(Demodulator)
-
+QT_FORWARD_DECLARE_CLASS(WaveRecorder)
 class SoundPlayer : public QObject
 {
 	Q_OBJECT
@@ -39,9 +39,11 @@ private:
 	QThread updateAudioBufThread;	// 更新audio的buffer的线程
 	// 声音播放
 	QAudioFormat format;
+	//QByteArray buf;
 	QAudioOutput *m_audio;
 	PCMIODevice *m_pcmIODevice;
 	Demodulator *m_demod;
+	WaveRecorder *m_waveRecorder;
 };
 
 class UpdateAudioBufWorker :public QObject

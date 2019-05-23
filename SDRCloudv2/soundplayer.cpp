@@ -3,12 +3,13 @@
 #include <QDebug>
 #include "constant.h"
 #include "demodulator.h"
+#include "waverecorder.h"
 
 SoundPlayer::SoundPlayer(Demodulator *demod, QObject *parent)
 	: QObject(parent),
-	m_demod(demod)
+	m_demod(demod)	
 {
-	initSoundPlayer();
+	initSoundPlayer();	// 注意，这里要确保format被初始化好了，才能去初始化recorder
 }
 
 SoundPlayer::~SoundPlayer()
@@ -23,17 +24,23 @@ void SoundPlayer::startPlay()
 	startUpdateAudioBuf();
 	m_audio->start(m_pcmIODevice);	// 启动声音播放
 	qDebug() << "start play m_audio";
+	
 }
 
 void SoundPlayer::stopPlay()
 {
 	m_audio->suspend();
+	//WaveFile::saveWave("E:/workspace/Qt/SDRCloud/waves/wave01.wav", buf, format);
+	m_waveRecorder->saveWave();
+	//buf.clear();
+	//m_pcmIODevice->stopUpdate();
 }
 
 void SoundPlayer::destroy()
 {
 	m_audio->stop();
 	delete m_audio;
+	delete m_waveRecorder;
 }
 
 void SoundPlayer::startUpdateAudioBuf()
@@ -43,14 +50,16 @@ void SoundPlayer::startUpdateAudioBuf()
 
 void SoundPlayer::initSoundPlayer()
 {
-	m_pcmIODevice = new PCMIODevice();
-	// Set up the format, eg.
 	format.setSampleRate(CONFIG_DEFAULT_AUDIO_RATE);
 	format.setChannelCount(1);
 	format.setSampleSize(8);
 	format.setCodec("audio/pcm");
 	format.setByteOrder(QAudioFormat::LittleEndian);
 	format.setSampleType(QAudioFormat::SignedInt);
+
+	m_waveRecorder = new WaveRecorder("E:/workspace/Qt/SDRCloud/waves/wave02.wav", format);
+	m_pcmIODevice = new PCMIODevice(m_waveRecorder);
+	// Set up the format, eg.
 
 	QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
 	if (!info.isFormatSupported(format)) {
@@ -73,15 +82,19 @@ void SoundPlayer::m_updateAudioBuf()
 	quint32 len = 0;
 	while (true)
 	{
+		//qDebug() << m_demod->isRunning();
 		if (m_demod->isRunning() == false)
 		{
+
 			break;
 		}
 		m_demod->getDataByChar(data, len);
 		// 将数据写到audio buffer里
+		//buf.append(data, len);	// 只记录稳定时刻
+		//WaveFile::saveWave("E:/workspace/Qt/SDRCloud/waves/wave01.wav", buf, format);
+		//buf.clear();
 		m_pcmIODevice->writeData(data, len);
 	}
-
 }
 
 void SoundPlayer::handleStateChanged(QAudio::State newState)

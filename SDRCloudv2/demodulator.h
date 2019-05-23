@@ -33,7 +33,6 @@ signals:
 	void m_demodFMSignal(Demodulator *demod);
 private:
 	void m_demodFM();
-
 private:
 	RtlDevice *m_dongle;
 	QVector<qreal> m_unDemodSignal;

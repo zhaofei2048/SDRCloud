@@ -304,7 +304,7 @@ bool RtlDevice::m_readData()
 		m_state = RtlDevice::LOST;
 		emit lostDeviceSignal(tr("error when read the data"));
 	}
-	qDebug() << "is reading data";
+	qDebug() << "end reading data from device";
 	return ret;
 }
 

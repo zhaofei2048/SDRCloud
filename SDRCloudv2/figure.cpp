@@ -30,6 +30,9 @@ void Figure::initFigure()
 	m_figureBufLen = 2000;
 	/*figure = new QCustomPlot;*/
 	this->addGraph();
+	//this->graph(0)->setLineStyle(QCPGraph::lsStepCenter);
+	//this->graph(0)->setBrush(QBrush(QColor(0, 200, 150)));
+	this->graph(0)->setPen(QPen(QColor(0, 200, 150)));
 	this->xAxis->setLabel(tr("time"));
 	this->yAxis->setLabel(tr("signal"));
 	this->xAxis->setRange(0, m_figureBufLen);

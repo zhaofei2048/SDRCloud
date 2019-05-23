@@ -10,6 +10,7 @@
 #include "rwturnlock.h"
 #include <QDebug>
 #include "constant.h"
+#include "iir.h"
 
 #define DEFAULT_BUFFERSIZE 16*16384
 static quint32 _DEFAULT_SAMPLERATES[11] = {
@@ -72,18 +73,39 @@ void ReadWriteBuffer<T>::write(const T data[], quint32 len)
 	m_lock.unlock();
 }
 
+//template<class T>
+//void ReadWriteBuffer<T>::writeChar(const unsigned char *data, quint32 len)
+//{
+//	quint32 j = 0;
+//	m_lock.lockForWrite();
+//	//qDebug() << "write char";
+//	for (int i = 0; i < len-1; i = i + downSampleRate)	// 这里进行一定的下采样
+//	{
+//		/*m_buf[i] = (T)(((qint16)data[i] - 127.0) / 128.0);*/
+//		m_buf[j] = (T)((qint16)data[i] - 127.0);
+//		j++;
+//		m_buf[j] = (T)((qint16)data[i + 1] - 127.0);	// 确保i+1不要越界
+//		j++;
+//	}
+//	m_len = j;
+//	m_lock.unlock();
+//}
+
 template<class T>
 void ReadWriteBuffer<T>::writeChar(const unsigned char *data, quint32 len)
 {
 	quint32 j = 0;
+	static qreal data_out[DEFAULT_BUFFERSIZE];
+	quint32 len_out = 0;
+	iir_downsample(data, len, data_out, len_out);
+
 	m_lock.lockForWrite();
 	//qDebug() << "write char";
-	for (int i = 0; i < len-1; i = i + downSampleRate)	// 这里进行一定的下采样
+	for (int i = 0; i < len_out-1; i = i + downSampleRate)	// 这里进行一定的下采样
 	{
-		/*m_buf[i] = (T)(((qint16)data[i] - 127.0) / 128.0);*/
-		m_buf[j] = (T)((qint16)data[i] - 127.0);
+		m_buf[j] = (T)(data_out[i]);
 		j++;
-		m_buf[j] = (T)((qint16)data[i + 1] - 127.0);	// 确保i+1不要越界
+		m_buf[j] = (T)(data_out[i+1]);	// 确保i+1不要越界
 		j++;
 	}
 	m_len = j;

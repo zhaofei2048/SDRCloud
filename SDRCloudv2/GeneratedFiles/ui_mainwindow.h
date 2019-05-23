@@ -29,6 +29,7 @@ public:
     QAction *actDebug;
     QAction *actOpenRTL;
     QAction *actCloseRTL;
+    QAction *actOpenImgWindow;
     QWidget *centralWidget;
     QMenuBar *menuBar;
     QMenu *menuFile;
@@ -59,6 +60,8 @@ public:
         actCloseRTL = new QAction(MainWindowClass);
         actCloseRTL->setObjectName(QStringLiteral("actCloseRTL"));
         actCloseRTL->setEnabled(false);
+        actOpenImgWindow = new QAction(MainWindowClass);
+        actOpenImgWindow->setObjectName(QStringLiteral("actOpenImgWindow"));
         centralWidget = new QWidget(MainWindowClass);
         centralWidget->setObjectName(QStringLiteral("centralWidget"));
         MainWindowClass->setCentralWidget(centralWidget);
@@ -95,6 +98,7 @@ public:
         menuRTL->addAction(actOpenRTL);
         menuRTL->addAction(actCloseRTL);
         menuRTL->addAction(actDebug);
+        menuImage->addAction(actOpenImgWindow);
         menuImage->addAction(actDebug);
         menuSate->addAction(actDebug);
         menuConfig->addAction(actDebug);
@@ -119,6 +123,10 @@ public:
         actCloseRTL->setText(QApplication::translate("MainWindowClass", "\345\205\263\351\227\255RTL\350\256\276\345\244\207", Q_NULLPTR));
 #ifndef QT_NO_TOOLTIP
         actCloseRTL->setToolTip(QApplication::translate("MainWindowClass", "\345\205\263\351\227\255\346\211\223\345\274\200\347\232\204RTL\350\256\276\345\244\207", Q_NULLPTR));
+#endif // QT_NO_TOOLTIP
+        actOpenImgWindow->setText(QApplication::translate("MainWindowClass", "\346\211\223\345\274\200\345\233\276\345\203\217\347\252\227\345\217\243...", Q_NULLPTR));
+#ifndef QT_NO_TOOLTIP
+        actOpenImgWindow->setToolTip(QApplication::translate("MainWindowClass", "\346\211\223\345\274\200\345\233\276\345\203\217\347\252\227\345\217\243", Q_NULLPTR));
 #endif // QT_NO_TOOLTIP
         menuFile->setTitle(QApplication::translate("MainWindowClass", "\346\226\207\344\273\266", Q_NULLPTR));
         menuRTL->setTitle(QApplication::translate("MainWindowClass", "RTL", Q_NULLPTR));
