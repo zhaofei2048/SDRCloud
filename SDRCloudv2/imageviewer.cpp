@@ -62,6 +62,9 @@
 #include "imageviewer.h"
 #include "wavfile.h"
 #include "demod_core.h"
+#include "aptformat.h"
+#include "imageprocess.h"
+
 
 //! [0]
 ImageViewer::ImageViewer()
@@ -305,60 +308,70 @@ void ImageViewer::importWave()
 	}
 	else {
 		qDebug() << fileName;
-		WavFile wav;
-		quint64 len;
-		int sampleSize;
-		int Fs;
-		qint64 len2;
-		QAudioFormat format;
+		unsigned char *imgarr = nullptr;
+		int imgSize = 0;
+		int width;
+		int height;
+		QImage img;
+		aptDecode(fileName, imgarr, imgSize, width, height);
+		arrToImage(imgarr, width, height, img);
+		histeq(img);
+		setImage(img);
+		qDebug() << "img is displaying: height=" << height;
+		//WavFile wav;
+		//quint64 len;
+		//int sampleSize;
+		//int Fs;
+		//qint64 len2;
+		//QAudioFormat format;
 
-		wav.getWaveDataSize(fileName, len, sampleSize);	// len / sampleSize = 样本点数
-		qreal *data = (qreal*)(new char[ceil(len/(sampleSize/8))*sizeof(qreal)]);
+		//wav.getWaveDataSize(fileName, len, sampleSize);	// len / sampleSize = 样本点数
+		//qreal *data = (qreal*)(new char[ceil(len/(sampleSize/8))*sizeof(qreal)]);
 
-		wav.readWave(fileName, data, len2, format);
-		qDebug() << "wav datasize = " << QString::number(len2);
-		Fs = format.sampleRate();
+		//wav.readWave(fileName, data, len2, format);
+		//qDebug() << "wav datasize = " << QString::number(len2);
+		//Fs = format.sampleRate();
 
-		quint32 aptDataLen = 0;
-		demodAM(Fs, data, len2, data, aptDataLen);
-		qDebug() << "apt data len=" << aptDataLen;
+		//quint32 aptDataLen = 0;
+		//demodAM(Fs, data, len2, data, aptDataLen);
+		//qDebug() << "apt data len=" << aptDataLen;
 
-		// 整理为APT图像
-		unsigned int imgSize = 0;
-		unsigned int width = 0;
-		unsigned int height = 0;
-		uchar *imgarr = nullptr;
-		aptToImage(Fs, data, aptDataLen, imgarr, imgSize, width);
-		qDebug() << "imgSize=" << imgSize;
-		height = imgSize / width;
-		
-		qDebug() << "Fs=" << Fs;
-		unsigned int maxwidth = width > height ? width : height;
-		QImage img(width, height, QImage::Format_Grayscale8);
+		//// 整理为APT图像
+		//unsigned int imgSize = 0;
+		//unsigned int width = 0;
+		//unsigned int height = 0;
+		//uchar *imgarr = nullptr;
+		//aptToImage(Fs, data, aptDataLen, imgarr, imgSize, width);
+		//qDebug() << "imgSize=" << imgSize;
+		//height = imgSize / width;
+		//
+		//qDebug() << "Fs=" << Fs;
+		//unsigned int maxwidth = width > height ? width : height;
+		//QImage img(width, height, QImage::Format_Grayscale8);
 		//for (int i = 0; i < 10; i++) {
 		//	qDebug() << data[i];
 		//}
 
 		//RGB分量值
-		int b = 0;
-		int g = 0;
-		int r = 0;
+		//int b = 0;
+		//int g = 0;
+		//int r = 0;
 
-		//设置像素
-		for (int i = 0; i < height; i++)
-		{
-			for (int j = 0; j < width; j++)
-			{
-				b = (int)imgarr[i * width + j];
-				g = b;
-				r = g;
-				img.setPixel(j, i, qRgb(r, g, b));
-			}
-		}
+		////设置像素
+		//for (int i = 0; i < height; i++)
+		//{
+		//	for (int j = 0; j < width; j++)
+		//	{
+		//		b = (int)imgarr[i * width + j];
+		//		g = b;
+		//		r = g;
+		//		img.setPixel(j, i, qRgb(r, g, b));
+		//	}
+		//}
 
-		/*imageLabel->setPixmap(QPixmap::fromImage(img));*/
-		setImage(img);
-		qDebug() << "img is displaying: height=" << height;
+		///*imageLabel->setPixmap(QPixmap::fromImage(img));*/
+		//setImage(img);
+		//qDebug() << "img is displaying: height=" << height;
 	}
 }
 //! [16]
