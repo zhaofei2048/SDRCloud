@@ -16,14 +16,14 @@
 #include <QProgressBar>
 #include "demodulator.h"
 #include "soundplayer.h"
-//#include "imageviewer.h"
+#include "imageviewer.h"
 
 const QString MainWindow::demodMethodNames[8] = { "NFM", "WFM","AM","DSB","USB","LSB" ,"RAW","CW" };
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent),
 	m_recordTime(0),
-	m_currentRecordTime(0)
-	//imgViewer(nullptr)
+	m_currentRecordTime(0),
+	imgViewer(nullptr)
 {
 	ui.setupUi(this);
 	setWindowTitle(tr("SDRCloud"));
@@ -423,11 +423,11 @@ void MainWindow::lostDevice(QString info)
 
 void MainWindow::openImgWindow(bool b)
 {
-	//if (imgViewer == nullptr) {
-	//	imgViewer = new ImageViewer();
-	//}
-	//imgViewer->setWindowTitle(tr("NOAAÎÀÐÇÔÆÍ¼´¦Àí"));
-	//imgViewer->show();
-	;
+	if (imgViewer == nullptr) {
+		imgViewer = new ImageViewer();
+	}
+	imgViewer->setWindowTitle(tr("NOAAÎÀÐÇ ÔÆÍ¼´¦Àí"));
+	imgViewer->show();
+
 
 }

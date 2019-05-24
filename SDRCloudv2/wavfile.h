@@ -41,7 +41,7 @@
 
 #ifndef WAVFILE_H
 #define WAVFILE_H
-
+#pragma execution_character_set("utf-8")
 #include <QObject>
 #include <QFile>
 #include <QAudioFormat>
@@ -56,6 +56,9 @@ public:
 	quint32 dataLength();
 	qint64 headerLength() const;
 	bool writeWave(const QString &, const QAudioFormat &format, const char *buffer, qint64 len);
+	bool readWave(const QString fileName, char *data, qint64 &len, QAudioFormat &format);
+	bool readWave(const QString fileName, qreal *data, qint64 &len, QAudioFormat &format);
+	bool getWaveDataSize(const QString fileName, quint64 & len, int &sampleSize);
 
 private:
 	quint32 readDataHeader();

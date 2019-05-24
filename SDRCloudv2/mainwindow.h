@@ -103,7 +103,7 @@ private:	// 界面组件成员变量
 	QProgressBar *pgbRecord;	// 显示录制时长的进度条
 	QPushButton *btnClearRecord; // 清空已录制内容
 	QLabel *labDeviceName;
-	//ImageViewer *imgViewer;
+	ImageViewer *imgViewer;
 
 	
 

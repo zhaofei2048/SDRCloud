@@ -41,6 +41,8 @@
 #include <qendian.h>
 #include <QVector>
 #include <QDebug>
+#include <QDataStream>
+#include <QFloat16>
 #include "wavfile.h"
 
 struct chunk
@@ -217,6 +219,142 @@ bool WavFile::writeWave(const QString &name, const QAudioFormat &format, const c
 
 	result &= (write(array, len) == len);
 
+	close();
+	return result;
+}
+// 需要自己给data预分配足够的空间
+bool WavFile::readWave(const QString fileName, char * data, qint64 & len, QAudioFormat & format)
+{
+	bool result = this->open(fileName, true);
+
+	if (result == false) {
+		qDebug() << "file not open";
+	}
+	// 读取文件头
+	CombinedHeader header;
+	seek(0);
+	result &= (read(reinterpret_cast<char *>(&header), sizeof(CombinedHeader)) == sizeof(CombinedHeader));
+	format.setChannelCount(header.wave.numChannels);
+	format.setSampleRate(header.wave.sampleRate);
+	format.setSampleSize(header.wave.bitsPerSample);
+	format.setCodec("audio/pcm");
+	format.setByteOrder(QAudioFormat::LittleEndian);
+	format.setSampleType(QAudioFormat::SignedInt);
+	// 检测数据大小并读取数据
+	DATAHeader dataHeader;
+	seek(36);
+	result &= (read(reinterpret_cast<char *>(&dataHeader), sizeof(DATAHeader)) == sizeof(DATAHeader));
+	seek(44);
+	len = dataHeader.descriptor.size;
+	result &= (read(data, len) == len);
+
+	close();
+	return result;
+}
+// 需要预先给data分配空间
+bool WavFile::readWave(const QString fileName, qreal * data, qint64 & len, QAudioFormat & format)
+{
+	len = 0;
+	bool result = this->open(fileName, true);
+
+	if (result == false) {
+		qDebug() << "file not open";
+	}
+	// 读取文件头
+	CombinedHeader header;
+	seek(0);
+	result &= (read(reinterpret_cast<char *>(&header), sizeof(CombinedHeader)) == sizeof(CombinedHeader));
+	int sampleSize = header.wave.bitsPerSample;
+	if (header.wave.numChannels != 1) {
+		qDebug() << "num of channels > 1 is not supported at now";
+		return false;
+	}
+	format.setChannelCount(header.wave.numChannels);
+	format.setSampleRate(header.wave.sampleRate);
+	format.setSampleSize(header.wave.bitsPerSample);
+	format.setCodec("audio/pcm");
+	format.setByteOrder(QAudioFormat::LittleEndian);
+	format.setSampleType(QAudioFormat::SignedInt);
+	// 检测数据大小并读取数据
+	DATAHeader dataHeader;
+	seek(36);
+	result &= (read(reinterpret_cast<char *>(&dataHeader), sizeof(DATAHeader)) == sizeof(DATAHeader));
+	seek(44);
+	qint64 maxlen = 0;
+	maxlen = dataHeader.descriptor.size;
+	QByteArray wavdata;
+	wavdata = read(maxlen);
+	if (wavdata.isEmpty()) {
+		len = 0;
+		return false;
+	}
+	close();
+
+	// 将wav数据转为便于处理的形式
+	QDataStream ds(wavdata);
+	ds.setByteOrder(QDataStream::LittleEndian);
+	//ds.setFloatingPointPrecision(QDataStream::DoublePrecision);
+	qint64 i = 0;
+
+	if (sampleSize == 8) {
+		qint8 temp;
+		while (ds.atEnd() == false) {
+			ds >> temp;
+			data[i] = qreal(temp)/128.0;
+			i++;
+		}
+		len = i;
+	}
+	else if (sampleSize == 16) {
+		qint16 temp;
+		while (ds.atEnd() == false) {
+			ds >> temp;
+			//if (i < 10) {
+			//	qDebug() << "*" << temp;
+			//}
+			data[i] = qreal(temp)/32768.0;
+			i++;
+		}
+		len = i;
+	}
+	//else if (sampleSize == 32) {
+	//	ds.setFloatingPointPrecision(QDataStream::SinglePrecision);
+	//	while (ds.atEnd() == false) {
+	//		float temp;
+	//		ds >> temp;
+	//		data[i] = qreal(temp);
+	//		i++;
+	//	}
+	//	len = i;
+	//}
+	else {
+		qDebug() << "the sample size of the wave file is not supported";
+	}
+
+
+	return result;
+}
+bool WavFile::getWaveDataSize(const QString fileName, quint64 & len, int &sampleSize)
+{
+	len = 0;
+	sampleSize = 0;
+
+	bool result = this->open(fileName, true);
+
+	if (result == false) {
+		qDebug() << "file not open";
+	}
+	// 读取文件头，检测样本点大小
+	CombinedHeader header;
+	seek(0);
+	result &= (read(reinterpret_cast<char *>(&header), sizeof(CombinedHeader)) == sizeof(CombinedHeader));
+	sampleSize = header.wave.bitsPerSample;
+	// 检测数据大小
+	DATAHeader dataHeader;
+	seek(36);
+	result &= (read(reinterpret_cast<char *>(&dataHeader), sizeof(DATAHeader)) == sizeof(DATAHeader));
+	qDebug() << dataHeader.descriptor.id << "=>" << QString::number(dataHeader.descriptor.size);
+	len = dataHeader.descriptor.size;
 	close();
 	return result;
 }

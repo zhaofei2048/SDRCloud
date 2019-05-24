@@ -110,6 +110,9 @@
     <QtMoc Include="waverecorder.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="imageviewer.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="mainwindow.ui">
@@ -144,9 +147,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="iir.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="imageviewer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="wavfile.h">
