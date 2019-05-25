@@ -40,6 +40,8 @@ void s_interp1(double *x, const unsigned int len1, double *y, const unsigned int
 		y[i] = temp;
 		//y[i] = 0;
 	}
+	delete index;
+	index = nullptr;
 }
 
 // 将数据从sampleRate1重采样到sampleRate2，data_out不需要预先分配空间

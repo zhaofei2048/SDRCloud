@@ -40,6 +40,8 @@ public:
 	void cacheWave(const QByteArray &raw);
 	void cacheWave(const char *data, const quint32 len);
 	void saveWave();
+	void setRecordFileName(QString name);
+	void clearWave();
 private:
 	QAudioFormat m_format;
 	QString m_fileName;

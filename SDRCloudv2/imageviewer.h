@@ -65,6 +65,8 @@ class QLabel;
 class QMenu;
 class QScrollArea;
 class QScrollBar;
+class QProgressBar;
+class QToolBar;
 QT_END_NAMESPACE
 
 //! [0]
@@ -75,6 +77,7 @@ class ImageViewer : public QMainWindow
 public:
 	ImageViewer();
 	bool loadFile(const QString &);
+	void updateStatusInfo(QString info, int p);
 
 private slots:
 	void open();
@@ -89,6 +92,8 @@ private slots:
 	void about();
 	/////////////
 	void importWave();	// 导入wav文件
+	void startDecode(bool);
+	void doHisteq(bool);
 
 private:
 	void createActions();
@@ -99,10 +104,14 @@ private:
 	void scaleImage(double factor);
 	void adjustScrollBar(QScrollBar *scrollBar, double factor);
 
+	QToolBar *mainToolBar;
 	QImage image;
 	QLabel *imageLabel;
+	/*QLabel *statusLabel;*/
+	QProgressBar *progress;
 	QScrollArea *scrollArea;
 	double scaleFactor;
+	QString wavFileName;
 
 //#ifndef QT_NO_PRINTER
 //	QPrinter printer;
@@ -116,6 +125,9 @@ private:
 	QAction *normalSizeAct;
 	QAction *fitToWindowAct;
 	QAction *importWaveAct;
+	QAction *syncAct;
+	QAction *decodeAct;
+	QAction *histeqAct;
 };
 //! [0]
 

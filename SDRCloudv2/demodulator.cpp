@@ -13,7 +13,8 @@ Demodulator::Demodulator(RtlDevice *dongle, QObject *parent)
 	: QObject(parent),
 	m_preQdivI(0.0),
 	m_signalLen(0),
-	m_dongle(dongle)
+	m_dongle(dongle),
+	scaleFactor(20)
 {
 	demodWorker = new DemodWorker();	// 这个不会被重复执行，所以不用判断是否重复实例化
 	demodWorker->moveToThread(&m_demodThread);
@@ -43,6 +44,17 @@ bool Demodulator::isRunning()
 	return m_isRunning;
 }
 
+int Demodulator::getScaleFactor()
+{
+	return scaleFactor;
+}
+
+int Demodulator::setScaleFactor(int factor)
+{
+	scaleFactor = factor;
+	return factor;
+}
+
 void Demodulator::getData(QVector<qreal>& data)
 {
 	// 考虑这里是否需要一定的条件等待，避免重复读取数据
@@ -62,7 +74,16 @@ void Demodulator::getDataByChar(char data[], quint32 &len)
 	int i = 0;
 	for (i = 0; i < m_signalLen; i++)
 	{
-		data[i] = char(m_signal[i]);
+		if (m_signal[i] > 127) {
+			data[i] = char(127);
+		}
+		else if (m_signal[i] < -128) {
+			data[i] = char(-128);
+		}
+		else {
+			data[i] = char(m_signal[i]);
+		}
+		
 	}
 	len = i;
 	m_signalLock.unlock();
@@ -161,7 +182,10 @@ void Demodulator::m_demodFM()
 		int i = 0;
 		for (i = 0; i < result1Count; i++)
 		{
-			m_signal[i] = 40.0*result1.dequeue();
+			m_signal[i] = scaleFactor*result1.dequeue();
+			if (m_signal[i] >= 128.0 || m_signal[i] < -128) {
+				qDebug() << "*" << m_signal[i];
+			}
 			/*m_signal[i] = 5.0*qCos(2*3.14*50*i*(1/48000.0));*/
 			/*out << m_signal[i];*/
 		}

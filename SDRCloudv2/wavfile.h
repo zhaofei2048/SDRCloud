@@ -59,6 +59,7 @@ public:
 	bool readWave(const QString fileName, char *data, qint64 &len, QAudioFormat &format);
 	bool readWave(const QString fileName, qreal *data, qint64 &len, QAudioFormat &format);
 	bool getWaveDataSize(const QString fileName, quint64 & len, int &sampleSize);
+	bool clearAndWriteWave(const QString &name, const QAudioFormat &format, const char *array, qint64 len);
 
 private:
 	quint32 readDataHeader();

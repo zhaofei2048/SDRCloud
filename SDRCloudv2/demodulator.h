@@ -28,6 +28,8 @@ public:	// 暴露出去的接口
 	void startDemodFM();	// 请确保硬件正常工作时再调用我进行解调，否则可能出现线程一直阻塞下去的错误
 	void stopDemodFM();
 	bool isRunning();
+	int getScaleFactor();
+	int setScaleFactor(int factor);
 
 signals:
 	void m_demodFMSignal(Demodulator *demod);
@@ -43,6 +45,7 @@ private:
 	QThread m_demodThread;
 	DemodWorker *demodWorker;
 	bool m_isRunning;
+	int scaleFactor;
 };
 
 

@@ -14,6 +14,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QProgressBar>
+#include <QLineEdit>
 #include "demodulator.h"
 #include "soundplayer.h"
 #include "imageviewer.h"
@@ -94,7 +95,20 @@ void MainWindow::connectSignalSlot()
 	connect(btnStartPlay, SIGNAL(clicked()), this, SLOT(btnStartPlaySlot()));
 	// 关联打开图像窗口
 	connect(ui.actOpenImgWindow, SIGNAL(triggered(bool)), this, SLOT(openImgWindow(bool)));
-
+	// 关联选择wav记录文件的按钮
+	connect(btnSelectFile, SIGNAL(clicked()), this, SLOT(selectRecordFile()));
+	// 关联清空录制
+	connect(btnClearRecord, SIGNAL(clicked()), this, SLOT(clearRecordWave()));
+	// 关联记录文件编辑框文字改变时
+	connect(editRecordFile, SIGNAL(editingFinished()), this, SLOT(recordFileNameChanged()));
+	// 关联记录与否状态的改变
+	connect(comboxRecord, SIGNAL(currentIndexChanged(int)), this, SLOT(recordStateChanged(int)));
+	// 关联tuner中心频率的改变与设置
+	connect(sboxTunerFreq, SIGNAL(valueChanged(double)), this, SLOT(tunerFreqChanged(double)));
+	// 关联tuner的增益设置
+	connect(slideRFGain, SIGNAL(sliderReleased()), this, SLOT(tunerGainChanged()));
+	// 关联IF gain slider和scale factor设置
+	connect(slideIFGain, SIGNAL(sliderReleased()), this, SLOT(scaleFactorChanged()));
 }
 
 
@@ -127,6 +141,7 @@ void MainWindow::openRTL(bool b)
 				{
 					labDeviceName->setText(QString("设备:%0").arg(m_dongle->getDeviceName()));
 					displayDefaultConfig();
+					btnStartPlay->setEnabled(true);
 				}
 				else
 				{
@@ -181,6 +196,7 @@ void MainWindow::iniLeftToolBoxUI()
 	// 对左边工具区进行初始化并布局================================================================
 	// 创建开始播放的按钮
 	btnStartPlay = new QPushButton(tr("开始播放"));
+	btnStartPlay->setEnabled(false);
 	btnStartPlay->setStyleSheet(
 		//正常状态样式
 		"QPushButton{"
@@ -212,12 +228,19 @@ void MainWindow::iniLeftToolBoxUI()
 	// 1.创建声音录制相关UI
 	QGroupBox *groupRecordUIs = new QGroupBox;
 	comboxRecord = new QComboBox;
-	btnClearRecord = new QPushButton;
+	initComboxRecord();
+	btnClearRecord = new QPushButton(tr("清空录制"));
+	editRecordFile = new QLineEdit;
+	btnSelectFile = new QPushButton(tr("录制文件"));
+	QHBoxLayout *recordFileHLayout = new QHBoxLayout;
+	recordFileHLayout->addWidget(editRecordFile);
+	recordFileHLayout->addWidget(btnSelectFile);
 	QHBoxLayout *recordHLayout = new QHBoxLayout;
 	recordHLayout->addWidget(comboxRecord);
 	recordHLayout->addWidget(btnClearRecord);
 	QVBoxLayout *recordLayout = new QVBoxLayout;
 	pgbRecord = new QProgressBar;
+	recordLayout->addLayout(recordFileHLayout);
 	recordLayout->addLayout(recordHLayout);
 	recordLayout->addWidget(pgbRecord);
 	recordLayout->addStretch();
@@ -242,7 +265,7 @@ void MainWindow::iniLeftToolBoxUI()
 
 		demodLayoutc[qFloor(i / 2.0)]->addWidget(rbtnDemodMode[i]);
 	}
-
+	rbtnDemodMode[1]->setChecked(true);
 	for (int i = 0; i < 4; i++)
 	{
 		demodLayoutc[i]->addStretch();
@@ -266,7 +289,7 @@ void MainWindow::iniLeftToolBoxUI()
 	QLabel *labRFGain = new QLabel(tr("RF增益"));
 	slideRFGain = new QSlider(Qt::Horizontal);
 
-	QLabel *labIFGain = new QLabel(tr("IF增益"));
+	QLabel *labIFGain = new QLabel(tr("scale factor"));
 	slideIFGain = new QSlider(Qt::Horizontal);
 
 	chkboxOffsetTuning = new QCheckBox(tr("Offset Tuning"));
@@ -343,10 +366,18 @@ MainWindow::~MainWindow()
 
 void MainWindow::displayDefaultConfig()
 {
-	QVector<quint32> sampleRateList;
-	sampleRateList = m_dongle->getDefaultSampleRateList();
+
+	// 设置tuner频率调节范围
+	sboxTunerFreq->setRange(60.000000, 150.000000);
+	sboxTunerFreq->setSuffix("MHz");
+	sboxTunerFreq->setDecimals(6);
+	int freq = 97400000;
+	qDebug() << "freq = " << freq;
+	sboxTunerFreq->setValue(freq / 1000000.0);
 
 	// 在combobox中显示采样频率列表
+	QVector<quint32> sampleRateList;
+	sampleRateList = m_dongle->getDefaultSampleRateList();
 	comboxSampleRate->clear();
 	for (int i = 0; i < sampleRateList.count(); i++)
 	{
@@ -382,6 +413,11 @@ void MainWindow::displayDefaultConfig()
 	quint32 tunerGain = m_dongle->getTunerGain();
 	slideRFGain->setValue(tunerGain);
 
+	// 设置scale factor范围
+	int factor = m_demod->getScaleFactor();
+	slideIFGain->setRange(0, 100);
+	slideIFGain->setValue(factor);
+
 }
 
 void MainWindow::startRtl()
@@ -408,11 +444,13 @@ void MainWindow::btnStartPlaySlot()
 	{	
 		stopRtl();
 		btnStartPlay->setText("开始播放");
+		enableRecordUI(true);
 	}
 	else
 	{
 		startRtl();
 		btnStartPlay->setText("停止播放");
+		enableRecordUI(false);
 	}
 }
 
@@ -430,4 +468,78 @@ void MainWindow::openImgWindow(bool b)
 	imgViewer->show();
 
 
+}
+
+void MainWindow::selectRecordFile()
+{
+	qDebug() << "select file button clicked";
+	QString fileName = QFileDialog::getOpenFileName(this,
+		tr("选择wav数据保存文件"), ".", tr("波形数据 (*.wav)"));
+	if (fileName.isEmpty()) {
+		qDebug() << "can not open the record file";
+	}
+	else {
+		editRecordFile->setText(fileName);
+		m_player->setRecordFileName(fileName);
+	}
+}
+
+void MainWindow::recordFileNameChanged()
+{
+	qDebug() << "record file name changed";
+	QString name = editRecordFile->text();
+	if (name.isEmpty()) {
+		return;
+	}
+	
+	m_player->setRecordFileName(name);
+}
+
+void MainWindow::initComboxRecord()
+{
+	comboxRecord->addItem(tr("关闭录制"), QVariant(false));
+	comboxRecord->addItem(tr("开启录制"), QVariant(true));
+}
+
+void MainWindow::recordStateChanged(int)
+{
+	qDebug() << "record state changed";
+	QVariant state = comboxRecord->currentData(Qt::UserRole);
+	m_player->setRecordState(state.toBool());
+}
+
+void MainWindow::clearRecordWave()
+{
+	qDebug() << "clear record is called";
+	m_player->clearRecord();
+}
+
+void MainWindow::enableRecordUI(bool b)
+{
+	editRecordFile->setEnabled(b);
+	btnSelectFile->setEnabled(b);
+	comboxRecord->setEnabled(b);
+	btnClearRecord->setEnabled(b);
+}
+
+void MainWindow::tunerFreqChanged(double freq)
+{
+	
+	m_dongle->setTunerFreq(round(freq * 1000000));
+}
+
+void MainWindow::tunerGainChanged()
+{
+	
+	quint32 gain = 0;
+	gain = slideRFGain->value();
+	qDebug() << "tuner gain changed" << gain;
+	m_dongle->setTunerGain(gain);
+}
+
+void MainWindow::scaleFactorChanged()
+{
+	quint32 factor = 0;
+	factor = slideIFGain->value();
+	m_demod->setScaleFactor(factor);
 }

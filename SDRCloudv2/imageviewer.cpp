@@ -1,52 +1,3 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the examples of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:BSD$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** BSD License Usage
-** Alternatively, you may use this file under the terms of the BSD license
-** as follows:
-**
-** "Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are
-** met:
-**   * Redistributions of source code must retain the above copyright
-**     notice, this list of conditions and the following disclaimer.
-**   * Redistributions in binary form must reproduce the above copyright
-**     notice, this list of conditions and the following disclaimer in
-**     the documentation and/or other materials provided with the
-**     distribution.
-**   * Neither the name of The Qt Company Ltd nor the names of its
-**     contributors may be used to endorse or promote products derived
-**     from this software without specific prior written permission.
-**
-**
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-** "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-** LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-** A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-** OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-** SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-** LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-** DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-** THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-** (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-** OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
 
 #include <QtWidgets>
 #if defined(QT_PRINTSUPPORT_LIB)
@@ -59,6 +10,8 @@
 #include <QAudioFormat>
 #include  <QImage>
 #include <QPixmap>
+#include <QProgressBar>
+#include <QToolBar>
 #include "imageviewer.h"
 #include "wavfile.h"
 #include "demod_core.h"
@@ -72,6 +25,9 @@ ImageViewer::ImageViewer()
 	, scrollArea(new QScrollArea)
 	, scaleFactor(1)
 {
+	QIcon icon(":/icon/Resources/sdrcloud.ico");
+	setWindowIcon(icon);
+
 	imageLabel->setBackgroundRole(QPalette::Base);
 	imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 	imageLabel->setScaledContents(true);
@@ -80,6 +36,13 @@ ImageViewer::ImageViewer()
 	scrollArea->setWidget(imageLabel);
 	scrollArea->setVisible(false);
 	setCentralWidget(scrollArea);
+
+	progress = new QProgressBar();
+	progress->setRange(0, 7);
+	statusBar()->insertPermanentWidget(0, progress);
+	/*statusBar()->insertPermanentWidget(1, statusLabel);*/
+
+	
 
 	createActions();
 
@@ -110,6 +73,14 @@ bool ImageViewer::loadFile(const QString &fileName)
 		.arg(QDir::toNativeSeparators(fileName)).arg(image.width()).arg(image.height()).arg(image.depth());
 	statusBar()->showMessage(message);
 	return true;
+}
+
+void ImageViewer::updateStatusInfo(QString info, int p)
+{
+	statusBar()->showMessage(info);
+	if (p > 0) {
+		progress->setValue(p);
+	}
 }
 
 void ImageViewer::setImage(const QImage &newImage)
@@ -180,7 +151,7 @@ void ImageViewer::open()
 
 void ImageViewer::saveAs()
 {
-	QFileDialog dialog(this, tr("Save File As"));
+	QFileDialog dialog(this, tr("保存文件为"));
 	initializeImageFileDialog(dialog, QFileDialog::AcceptSave);
 
 	while (dialog.exec() == QDialog::Accepted && !saveFile(dialog.selectedFiles().first())) {}
@@ -284,19 +255,8 @@ void ImageViewer::fitToWindow()
 void ImageViewer::about()
 //! [15] //! [16]
 {
-	QMessageBox::about(this, tr("About Image Viewer"),
-		tr("<p>The <b>Image Viewer</b> example shows how to combine QLabel "
-			"and QScrollArea to display an image. QLabel is typically used "
-			"for displaying a text, but it can also display an image. "
-			"QScrollArea provides a scrolling view around another widget. "
-			"If the child widget exceeds the size of the frame, QScrollArea "
-			"automatically provides scroll bars. </p><p>The example "
-			"demonstrates how QLabel's ability to scale its contents "
-			"(QLabel::scaledContents), and QScrollArea's ability to "
-			"automatically resize its contents "
-			"(QScrollArea::widgetResizable), can be used to implement "
-			"zooming and scaling features. </p><p>In addition the example "
-			"shows how to use QPainter to print an image.</p>"));
+	QMessageBox::about(this, tr("关于SDRCloud"),
+		tr("国科大电子系统设计课程NOAA气象卫星云图接收解码软件"));
 }
 void ImageViewer::importWave()
 {
@@ -308,16 +268,12 @@ void ImageViewer::importWave()
 	}
 	else {
 		qDebug() << fileName;
-		unsigned char *imgarr = nullptr;
-		int imgSize = 0;
-		int width;
-		int height;
-		QImage img;
-		aptDecode(fileName, imgarr, imgSize, width, height);
-		arrToImage(imgarr, width, height, img);
-		histeq(img);
-		setImage(img);
-		qDebug() << "img is displaying: height=" << height;
+		wavFileName = fileName;
+		statusBar()->showMessage(fileName);
+		decodeAct->setEnabled(true);
+
+		
+
 		//WavFile wav;
 		//quint64 len;
 		//int sampleSize;
@@ -374,20 +330,43 @@ void ImageViewer::importWave()
 		//qDebug() << "img is displaying: height=" << height;
 	}
 }
+void ImageViewer::startDecode(bool)
+{
+	unsigned char *imgarr = nullptr;
+	int imgSize = 0;
+	int width;
+	int height;
+
+	bool isSync = syncAct->isChecked();
+	aptDecode(this, wavFileName, imgarr, imgSize, width, height, isSync);
+	updateStatusInfo("图像显示中", 6);
+	arrToImage(imgarr, width, height, image);
+	setImage(image);
+	updateStatusInfo("就绪", 7);
+	histeqAct->setEnabled(true);
+	qDebug() << "img is displaying: height=" << height;
+}
+void ImageViewer::doHisteq(bool)
+{
+	updateStatusInfo("对图像直方图均衡化中", 0);
+	histeq(image);
+	updateStatusInfo("就绪", 7);
+	setImage(image);
+}
 //! [16]
 
 //! [17]
 void ImageViewer::createActions()
 //! [17] //! [18]
 {
-	QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+	QMenu *fileMenu = menuBar()->addMenu(tr("文件"));
 
-	QAction *openAct = fileMenu->addAction(tr("&Open..."), this, &ImageViewer::open);
+	QAction *openAct = fileMenu->addAction(tr("&打开图片..."), this, &ImageViewer::open);
 	openAct->setShortcut(QKeySequence::Open);
 
-	importWaveAct = fileMenu->addAction(tr("导入wav文件"), this, &ImageViewer::importWave);
+	importWaveAct = fileMenu->addAction(tr("导入wav文件..."), this, &ImageViewer::importWave);
 
-	saveAsAct = fileMenu->addAction(tr("&Save As..."), this, &ImageViewer::saveAs);
+	saveAsAct = fileMenu->addAction(tr("&保存为..."), this, &ImageViewer::saveAs);
 	saveAsAct->setEnabled(false);
 
 	//printAct = fileMenu->addAction(tr("&Print..."), this, &ImageViewer::print);
@@ -396,43 +375,55 @@ void ImageViewer::createActions()
 
 	fileMenu->addSeparator();
 
-	QAction *exitAct = fileMenu->addAction(tr("E&xit"), this, &QWidget::close);
+	QAction *exitAct = fileMenu->addAction(tr("关闭图像窗口"), this, &QWidget::close);
 	exitAct->setShortcut(tr("Ctrl+Q"));
 
-	QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+	QMenu *editMenu = menuBar()->addMenu(tr("操作"));
 
-	copyAct = editMenu->addAction(tr("&Copy"), this, &ImageViewer::copy);
+	copyAct = editMenu->addAction(tr("复制"), this, &ImageViewer::copy);
 	copyAct->setShortcut(QKeySequence::Copy);
 	copyAct->setEnabled(false);
 
-	QAction *pasteAct = editMenu->addAction(tr("&Paste"), this, &ImageViewer::paste);
+	QAction *pasteAct = editMenu->addAction(tr("粘贴"), this, &ImageViewer::paste);
 	pasteAct->setShortcut(QKeySequence::Paste);
 
-	QMenu *viewMenu = menuBar()->addMenu(tr("&View"));
+	QMenu *viewMenu = menuBar()->addMenu(tr("视图"));
 
-	zoomInAct = viewMenu->addAction(tr("Zoom &In (25%)"), this, &ImageViewer::zoomIn);
+	zoomInAct = viewMenu->addAction(tr("放大 (25%)"), this, &ImageViewer::zoomIn);
 	zoomInAct->setShortcut(QKeySequence::ZoomIn);
 	zoomInAct->setEnabled(false);
 
-	zoomOutAct = viewMenu->addAction(tr("Zoom &Out (25%)"), this, &ImageViewer::zoomOut);
+	zoomOutAct = viewMenu->addAction(tr("缩小 (25%)"), this, &ImageViewer::zoomOut);
 	zoomOutAct->setShortcut(QKeySequence::ZoomOut);
 	zoomOutAct->setEnabled(false);
 
-	normalSizeAct = viewMenu->addAction(tr("&Normal Size"), this, &ImageViewer::normalSize);
+	normalSizeAct = viewMenu->addAction(tr("正常大小"), this, &ImageViewer::normalSize);
 	normalSizeAct->setShortcut(tr("Ctrl+S"));
 	normalSizeAct->setEnabled(false);
 
 	viewMenu->addSeparator();
 
-	fitToWindowAct = viewMenu->addAction(tr("&Fit to Window"), this, &ImageViewer::fitToWindow);
+	fitToWindowAct = viewMenu->addAction(tr("适应窗口"), this, &ImageViewer::fitToWindow);
 	fitToWindowAct->setEnabled(false);
 	fitToWindowAct->setCheckable(true);
 	fitToWindowAct->setShortcut(tr("Ctrl+F"));
 
-	QMenu *helpMenu = menuBar()->addMenu(tr("&Help"));
+	QMenu *helpMenu = menuBar()->addMenu(tr("帮助"));
 
-	helpMenu->addAction(tr("&About"), this, &ImageViewer::about);
-	helpMenu->addAction(tr("About &Qt"), &QApplication::aboutQt);
+	helpMenu->addAction(tr("关于"), this, &ImageViewer::about);
+	/*helpMenu->addAction(tr("About &Qt"), &QApplication::aboutQt);*/
+
+	// 构建工具栏
+	mainToolBar = addToolBar(tr("工具"));
+	syncAct = mainToolBar->addAction(tr("开启同步检测"));
+	decodeAct = mainToolBar->addAction(tr("解码图像"));
+	histeqAct = mainToolBar->addAction(tr("直方图均衡"));
+	connect(decodeAct, SIGNAL(triggered(bool)), this, SLOT(startDecode(bool)));
+	connect(histeqAct, SIGNAL(triggered(bool)), this, SLOT(doHisteq(bool)));
+	syncAct->setCheckable(true);
+	syncAct->setChecked(false);
+	decodeAct->setEnabled(false);
+	histeqAct->setEnabled(false);
 }
 //! [18]
 

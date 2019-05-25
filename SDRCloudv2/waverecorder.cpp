@@ -58,10 +58,17 @@ void WaveRecorder::saveWave()
 	//f.write(m_buffer, wh.dataSize);
 	//f.close();
 	//m_curPos = 0;
-	wavFile.writeWave(m_fileName, m_format, m_buffer, m_curPos);
-	m_curPos = 0;
-	isSaved = true;
+	if (isSaved == false) {
+		wavFile.writeWave(m_fileName, m_format, m_buffer, m_curPos);
+		m_curPos = 0;
+		isSaved = true;
+	}
 	//qDebug() << "wav header size:" << QString::number(sizeof(wh));
+}
+
+void WaveRecorder::setRecordFileName(QString name)
+{
+	m_fileName = name;
 }
 
 
@@ -85,5 +92,10 @@ void WaveRecorder::cacheWave(const char *data, const quint32 len)
 		isSaved = false;
 		//qDebug() << QString::number(len);
 	}
+}
+
+void WaveRecorder::clearWave()
+{
+	wavFile.clearAndWriteWave(m_fileName, m_format, m_buffer, 0);
 }
 

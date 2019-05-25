@@ -56,16 +56,18 @@ public:
 	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
 	friend class UpdateFigureBufWorker;
+	void console(const QString &info);
 	
 private:	// 私有成员函数
 	void iniUI();
 	void iniLeftToolBoxUI();
 	void iniStatusBar();
 	void connectSignalSlot();
-	void console(const QString &info);
 	void displayDefaultConfig();	// 将默认参数显示到界面组件上  
 	void stopRtl();
 	void startRtl();
+	void initComboxRecord();
+	void enableRecordUI(bool);
 
 private slots:	//私有槽函数
 	void openRTL(bool b);
@@ -75,6 +77,13 @@ private slots:	//私有槽函数
 	void btnStartPlaySlot();	// 开始播放按钮槽函数
 	void lostDevice(QString info);
 	void openImgWindow(bool b);
+	void selectRecordFile();
+	void recordFileNameChanged();
+	void recordStateChanged(int);
+	void clearRecordWave();
+	void tunerFreqChanged(double);
+	void tunerGainChanged();
+	void scaleFactorChanged();
 
 signals:
 	/*to do*/
@@ -99,6 +108,8 @@ private:	// 界面组件成员变量
 	QCheckBox *chkboxRtlAGC;
 	QComboBox *comboxSampleRate;
 	QComboBox *comboxSampleMode;
+	QLineEdit *editRecordFile;
+	QPushButton *btnSelectFile;
 	QComboBox *comboxRecord;
 	QProgressBar *pgbRecord;	// 显示录制时长的进度条
 	QPushButton *btnClearRecord; // 清空已录制内容

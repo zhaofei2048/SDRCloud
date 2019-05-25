@@ -25,7 +25,9 @@ public:
 	void stopPlay();
 	void destroy();
 	void startUpdateAudioBuf();
-
+	void setRecordFileName(QString name);
+	void setRecordState(bool on);
+	void clearRecord();
 
 private:
 	void initSoundPlayer();

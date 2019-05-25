@@ -76,7 +76,10 @@ public:	// 对象方法
 	bool isRtlAgcOn();
 	void getTunerGainRange(quint32 &min, quint32 &max);
 	quint32 getTunerGain();
+	quint32 setTunerGain(quint32 gain);
 	void getData(QVector<qreal>& data);
+	int getTunerFreq();
+	int setTunerFreq(int freq);
 
 
 public:

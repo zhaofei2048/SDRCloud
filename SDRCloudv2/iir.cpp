@@ -26,7 +26,7 @@ void iir_downsample(const unsigned char *data_in, const quint32 len_in, qreal da
 	int count = len_in;
 	for (i = 0; i < count; i=i+2)
 	{
-		ix_n = qreal(qint16(data_in[i])-127.0);
+		ix_n = qreal(qint8(data_in[i])-128.0);
 		iy_n = IIR_B[0] * ix_n + IIR_B[1] * ix_n_1 + IIR_B[2] * ix_n_2 - IIR_A[1] * iy_n_1 - IIR_A[2] * iy_n_2;
 
 		iy_n_2 = iy_n_1;

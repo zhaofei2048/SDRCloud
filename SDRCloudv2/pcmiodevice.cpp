@@ -4,12 +4,13 @@
 #include "waverecorder.h"
 
 
-PCMIODevice::PCMIODevice(WaveRecorder *recorder):
+PCMIODevice::PCMIODevice(WaveRecorder *recorder) :
 	curRead(0),
 	curWrite(0),
 	isForWrite(true),
 	validDataLength(0),
-	m_recorder(recorder)
+	m_recorder(recorder),
+	isRecordOn(false)
 {
 	for (int i = 0; i < DEFAULT_MAX_AUDIO_BUFFER_SIZE; i++)
 	{
@@ -50,7 +51,9 @@ qint64 PCMIODevice::readData(char * data, qint64 maxlen)
 
 	validDataLength -= (quint64)pos;
 	// 读取到的音频数据都在data里，且其长度为pos
-	m_recorder->cacheWave(data, pos);	// 对音频数据进行缓存
+	if (isRecordOn) {
+		m_recorder->cacheWave(data, pos);	// 对音频数据进行缓存
+	}
 	mutex.lock();
 	isForWrite = true;
 	notForRead.wakeAll();
@@ -97,4 +100,9 @@ void PCMIODevice::stopUpdate()
 {
 	notForRead.wakeAll();
 	notForWrite.wakeAll();
+}
+
+void PCMIODevice::setRecordState(bool on)
+{
+	isRecordOn = on;
 }

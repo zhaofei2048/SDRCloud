@@ -178,8 +178,7 @@ bool WavFile::readAudioFormat()
 	m_headerLength = pos();
 	return result;
 }
-
-bool WavFile::writeWave(const QString &name, const QAudioFormat &format, const char *array, qint64 len)
+bool WavFile::clearAndWriteWave(const QString &name, const QAudioFormat &format, const char *array, qint64 len)
 {
 	bool result = this->open(name, false);
 
@@ -188,6 +187,49 @@ bool WavFile::writeWave(const QString &name, const QAudioFormat &format, const c
 	}
 	//quint32 datasize = readDataHeader();	// 开启条语句代替下面语句用于改为wav文件的【追加模式】，即多次向同一个文件追加音频内容
 	quint32 datasize = 0;	// 这里总是让其【覆盖原来】存在的wav文件
+	if (datasize == 0)
+	{
+		CombinedHeader header;
+		memcpy(&header.riff.descriptor.id, "RIFF", 4);
+		header.riff.descriptor.size = qint32(len) + 36;	// header.riff.descriptor.size = qint32(len) + 32
+		memcpy(&header.riff.type, "WAVE", 4);
+		memcpy(&header.wave.descriptor.id, "fmt ", 4);
+		header.wave.descriptor.size = 16;
+		header.wave.audioFormat = 1;//"PCM"
+		header.wave.numChannels = format.channelCount();
+
+		header.wave.sampleRate = format.sampleRate();
+		header.wave.bitsPerSample = format.sampleSize();	// header.wave.bitsPerSample = 16
+		header.wave.blockAlign = header.wave.numChannels * header.wave.bitsPerSample / 8;
+		header.wave.byteRate = header.wave.blockAlign * header.wave.sampleRate;
+
+		seek(0);
+		result &= (write(reinterpret_cast<char *>(&header), sizeof(CombinedHeader)) == sizeof(CombinedHeader));
+	}
+	// Read off remaining header information
+	DATAHeader dataHeader;
+	memcpy(&dataHeader.descriptor.id, "data", 4);
+	dataHeader.descriptor.size = qint32(len + datasize);
+
+
+	seek(36);
+	result &= (write(reinterpret_cast<char *>(&dataHeader), sizeof(DATAHeader)) == sizeof(DATAHeader));
+	seek(44 + datasize);
+
+	result &= (write(array, len) == len);
+
+	close();
+	return result;
+}
+bool WavFile::writeWave(const QString &name, const QAudioFormat &format, const char *array, qint64 len)
+{
+	bool result = this->open(name, false);
+
+	if (result == false) {
+		qDebug() << "file not open";
+	}
+	quint32 datasize = readDataHeader();	// 开启条语句代替下面语句用于改为wav文件的【追加模式】，即多次向同一个文件追加音频内容
+	//quint32 datasize = 0;	// 这里总是让其【覆盖原来】存在的wav文件
 	if (datasize == 0)
 	{
 		CombinedHeader header;
@@ -266,7 +308,9 @@ bool WavFile::readWave(const QString fileName, qreal * data, qint64 & len, QAudi
 	result &= (read(reinterpret_cast<char *>(&header), sizeof(CombinedHeader)) == sizeof(CombinedHeader));
 	int sampleSize = header.wave.bitsPerSample;
 	if (header.wave.numChannels != 1) {
+		qDebug() << "===========================================";
 		qDebug() << "num of channels > 1 is not supported at now";
+		qDebug() << "===========================================";
 		return false;
 	}
 	format.setChannelCount(header.wave.numChannels);
@@ -295,6 +339,7 @@ bool WavFile::readWave(const QString fileName, qreal * data, qint64 & len, QAudi
 	ds.setByteOrder(QDataStream::LittleEndian);
 	//ds.setFloatingPointPrecision(QDataStream::DoublePrecision);
 	qint64 i = 0;
+	qDebug() << "sample size = " << sampleSize;
 
 	if (sampleSize == 8) {
 		qint8 temp;

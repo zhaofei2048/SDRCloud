@@ -123,8 +123,23 @@ void SoundPlayer::handleStateChanged(QAudio::State newState)
 	}
 }
 
+void SoundPlayer::setRecordFileName(QString name)
+{
+	m_waveRecorder->setRecordFileName(name);
+}
+
 void UpdateAudioBufWorker::doWork(SoundPlayer *player)
 {
 	qDebug() << "start doing work(update audio buffer)";
 	player->m_updateAudioBuf();
+}
+
+void SoundPlayer::setRecordState(bool on)
+{
+	m_pcmIODevice->setRecordState(on);
+}
+
+void SoundPlayer::clearRecord()
+{
+	m_waveRecorder->clearWave();
 }

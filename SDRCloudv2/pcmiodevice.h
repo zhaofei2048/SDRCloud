@@ -25,6 +25,7 @@ public:
 	qint64 readData(char *data, qint64 maxlen);
 	qint64 writeData(const char *data, qint64 len); //它是个纯虚函数， 不得不实现
 	void stopUpdate();
+	void setRecordState(bool on);
 private:
 	/*QByteArray m_buffer;*/
 	char m_buffer[DEFAULT_MAX_AUDIO_BUFFER_SIZE];
@@ -32,6 +33,7 @@ private:
 	qint64 curWrite;
 	quint64 validDataLength;
 	WaveRecorder *m_recorder;
+	bool isRecordOn;
 
 	// 不必要的锁
 	QMutex mutex;

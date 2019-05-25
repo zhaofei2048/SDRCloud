@@ -14,9 +14,6 @@
 // 6.s_interp1：此函数对一定长度的数据进行重新内插
 // 7.aptDecode：此函数总览全局，负责整个解调流程
 
-bool isSync = true;	// 是否需要同步
-
-
 bool arrToImage(const unsigned char *imgarr, const int width, const int height, QImage &image)
 {
 	QImage img(width, height, QImage::Format_Grayscale8);
@@ -42,7 +39,7 @@ bool arrToImage(const unsigned char *imgarr, const int width, const int height, 
 	image = img;
 	return true;
 }
-bool aptDecode(const QString fileName, unsigned char *&img, int &imgSize, int &width, int &height)
+bool aptDecode(ImageViewer *viewer, const QString fileName, unsigned char *&img, int &imgSize, int &width, int &height, bool isSync)
 {
 	qint64 len = 0;
 	unsigned int signalLen = 0;
@@ -52,22 +49,34 @@ bool aptDecode(const QString fileName, unsigned char *&img, int &imgSize, int &w
 	int Fs;	// 实际处理时采用的采样频率，期望它是4160Hz的整数倍
 
 	// 加载波形数据
+	viewer->updateStatusInfo("加载wav数据中", 0);
 	loadWave(fileName, data, len, inputSampleRate);
 	Fs = inputSampleRate;	// 先这样简单处理
 	// 重采样
+	viewer->updateStatusInfo("重采样中", 1);
 	resample(data, len, inputSampleRate, Fs, signal, signalLen);
 	// AM解调
+	viewer->updateStatusInfo("AM解调中", 2);
 	demodAM(Fs, signal, signalLen, signal, signalLen);
 
-	// 生成待检测信号波形
-	qreal *hn;
-	int hLen = 0;
-	generateSyncWave(hn, hLen, Fs);
-	// 寻找同步点
 	bool ret = false;
 	int *index = nullptr;
 	int indexLen = 0;
-	ret = findSync(signal, signalLen, hn, hLen, Fs, index, indexLen);
+	if (isSync) {
+		// 生成待检测信号波形
+		qreal *hn;
+		int hLen = 0;
+		viewer->updateStatusInfo("生成待检测信号波形中", 3);
+		generateSyncWave(hn, hLen, Fs);
+		// 寻找同步点
+		
+		viewer->updateStatusInfo("sync A同步位置寻找中", 4);
+		ret = findSync(signal, signalLen, hn, hLen, Fs, index, indexLen);
+		if (ret == false) {
+			viewer->updateStatusInfo("信号太短导致同步失败", 4);
+		}
+	}
+
 
 
 	int samplesPerLine = round(double(Fs) / Fw * lineLength);
@@ -80,10 +89,12 @@ bool aptDecode(const QString fileName, unsigned char *&img, int &imgSize, int &w
 		qDebug() << signal[i];
 	}
 	qDebug() << "Fs=" << Fs;
+
+	viewer->updateStatusInfo("对图像下采样中", 5);
 	if (ret == false || isSync == false) {
 		// 图片没有进行同步
 		imgLen = round(double(signalLen) / Fs * Fw);
-		height = round(double(imgLen) / width);
+		height = ceil(double(imgLen) / width); // imgSize = width*height; width = 2080; height = floor(imgLen/width)
 		imgData = new double[imgLen];
 		s_interp1(signal, signalLen, imgData, imgLen);
 		qDebug() << "==================";
@@ -104,6 +115,10 @@ bool aptDecode(const QString fileName, unsigned char *&img, int &imgSize, int &w
 			s_interp1(x, samplesPerLine, imgData+i*width, width);
 		}
 	}
+	// 及时清理空间
+	delete signal;
+	signal = nullptr;
+
 	imgSize = width * height;
 	img = (unsigned char*)new char[imgSize];
 	int i = 0;

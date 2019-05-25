@@ -282,6 +282,14 @@ quint32 RtlDevice::getTunerGain()
 	return m_tunerGain;
 }
 
+quint32 RtlDevice::setTunerGain(quint32 gain)
+{
+	m_tunerGain = gain;
+	RTLDriver::setTuerGain(gain);
+	return gain;
+}
+
+
 void RtlDevice::getData(QVector<qreal>& data)
 {
 	m_data.read(data);
@@ -349,6 +357,19 @@ bool RtlDevice::stopRunning()
 		return false;
 	}
 }
+
+int RtlDevice::getTunerFreq()
+{
+	return m_tunerFreq;
+}
+int RtlDevice::setTunerFreq(int freq)
+{
+	m_tunerFreq = freq;
+	RTLDriver::setCenterFreq(freq);
+	return freq;
+}
+
+
 
 void ReadDataWorker::doWork(RtlDevice *dev)
 {

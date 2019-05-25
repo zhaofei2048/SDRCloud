@@ -1,6 +1,7 @@
 #include "rtldriver.h"
 #include "rtl-sdr.h"
 #include <QVector>
+#include <QDebug>
 
 static RTLDev dev;
 
@@ -111,7 +112,7 @@ bool RTLDriver::setCenterFreq(const quint32 freq)
 	qint32 r = -1;
 
 	r = rtlsdr_set_center_freq(dev, freq);
-
+	qDebug() << "center freq changed" << freq << ":" << r;
 	return r == 0 ? true : false;
 }
 

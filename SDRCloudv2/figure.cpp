@@ -36,7 +36,20 @@ void Figure::initFigure()
 	this->xAxis->setLabel(tr("time"));
 	this->yAxis->setLabel(tr("signal"));
 	this->xAxis->setRange(0, m_figureBufLen);
-	this->yAxis->setRange(-130.0, 130.0);
+	this->yAxis->setRange(-150.0, 150.0);
+	QVector<qreal> x;
+	QVector<qreal> y;
+	QVector<qreal> z;
+	for (int i = 0; i < 2000; i++) {
+		x.append(i);
+		y.append(127);
+		z.append(-128);
+	}
+
+	this->addGraph();
+	this->graph(1)->setData(x, y);
+	this->addGraph();
+	this->graph(2)->setData(x, z);
 
 	// 更新figure buffer的线程
 	updateFigureBufWorker = new UpdateFigureBufWorker();
