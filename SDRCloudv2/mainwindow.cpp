@@ -415,7 +415,7 @@ void MainWindow::displayDefaultConfig()
 
 	// ÉèÖÃscale factor·¶Î§
 	int factor = m_demod->getScaleFactor();
-	slideIFGain->setRange(0, 100);
+	slideIFGain->setRange(0, 1000);
 	slideIFGain->setValue(factor);
 
 }

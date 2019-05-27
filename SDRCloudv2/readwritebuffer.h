@@ -27,6 +27,8 @@ static quint32 _DEFAULT_SAMPLERATES[11] = {
 	250e3 };
 
 static quint32 downSampleRate = (quint32)(2*CONFIG_DOWNSAMPLE_RATE_BEFORE_DEMOD);
+// _DEFAULT_SAMPLERATES[CONFIG_DEFAULT_SAMPLE_RATE_INDEX] / DEFAULT_AUDIO_RATE)
+// = 2048000/48000*2
 template <class T>
 class ReadWriteBuffer
 {
@@ -97,18 +99,24 @@ void ReadWriteBuffer<T>::writeChar(const unsigned char *data, quint32 len)
 	quint32 j = 0;
 	static qreal data_out[DEFAULT_BUFFERSIZE];
 	quint32 len_out = 0;
-	iir_downsample(data, len, data_out, len_out);
+	//======================method1 start===========================
+	//iir_downsample(data, len, data_out, len_out);
+
+	//m_lock.lockForWrite();
+	////qDebug() << "write char";
+	//for (int i = 0; i < len_out-1; i = i + downSampleRate)	// 这里进行一定的下采样
+	//{
+	//	m_buf[j] = (T)(data_out[i]);
+	//	j++;
+	//	m_buf[j] = (T)(data_out[i+1]);	// 确保i+1不要越界
+	//	j++;
+	//}
+	//m_len = j;
+	//m_lock.unlock();
+	//======================== method1 end==========================
 
 	m_lock.lockForWrite();
-	//qDebug() << "write char";
-	for (int i = 0; i < len_out-1; i = i + downSampleRate)	// 这里进行一定的下采样
-	{
-		m_buf[j] = (T)(data_out[i]);
-		j++;
-		m_buf[j] = (T)(data_out[i+1]);	// 确保i+1不要越界
-		j++;
-	}
-	m_len = j;
+	downsampleWithFir(data, len, (qreal *)m_buf, m_len);
 	m_lock.unlock();
 }
 

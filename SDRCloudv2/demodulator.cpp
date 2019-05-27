@@ -7,6 +7,7 @@
 #include <QQueue>
 #include <QFile>
 #include <QDataStream>
+#include "fir_256k_48k.h"
 
 
 Demodulator::Demodulator(RtlDevice *dongle, QObject *parent)
@@ -62,7 +63,7 @@ void Demodulator::getData(QVector<qreal>& data)
 	data.resize(0);
 	for (int i = 0; i < m_signalLen; i++)
 	{
-		data.append(m_signal[i]);
+		data.append(m_signal[i] * scaleFactor);
 	}
 	m_signalLock.unlock();
 }
@@ -72,16 +73,20 @@ void Demodulator::getDataByChar(char data[], quint32 &len)
 	// 考虑这里是否需要一定的条件等待，避免重复读取数据
 	m_signalLock.lockForRead();
 	int i = 0;
+	double temp = 0;
 	for (i = 0; i < m_signalLen; i++)
 	{
-		if (m_signal[i] > 127) {
+		temp = m_signal[i] * scaleFactor;
+		if (temp > 127) {
+			//data[i] = data[i - 1];
 			data[i] = char(127);
 		}
-		else if (m_signal[i] < -128) {
+		else if (temp < -128) {
+			//data[i] = data[i - 1];
 			data[i] = char(-128);
 		}
 		else {
-			data[i] = char(m_signal[i]);
+			data[i] = char(temp);
 		}
 		
 	}
@@ -140,7 +145,18 @@ void Demodulator::m_demodFM()
 			preQ = Q;
 		}
 		result1Count = result1.count();
+		qDebug() << "demodulating count = " << result1Count << ":" << result1[9];
 
+		// 对解调后的信号再次进行下采样==================================
+		int L = 3;
+		int M = 16;
+		qreal *coeff = (qreal *)FIR_256K_TO_48K;
+		quint32 coeff_len = (quint32)FIR_256K_TO_48K_LEN;
+		m_signalLock.lockForWrite();
+		resample_fast(result1, result1Count, L,
+			M, coeff, coeff_len, m_signal, m_signalLen);
+		m_signalLock.unlock();
+		//======================================================================
 
 		// 对解调后的结果进行FIR滤波(hFilterLen)============================
 		//int i = 0;
@@ -178,20 +194,20 @@ void Demodulator::m_demodFM()
 		////=============================================
 
 		// 不滤波============================
-		m_signalLock.lockForWrite();
-		int i = 0;
-		for (i = 0; i < result1Count; i++)
-		{
-			m_signal[i] = scaleFactor*result1.dequeue();
-			if (m_signal[i] >= 128.0 || m_signal[i] < -128) {
-				qDebug() << "*" << m_signal[i];
-			}
-			/*m_signal[i] = 5.0*qCos(2*3.14*50*i*(1/48000.0));*/
-			/*out << m_signal[i];*/
-		}
-		m_signalLen = i;
+		//m_signalLock.lockForWrite();
+		//int i = 0;
+		//for (i = 0; i < result1Count; i++)
+		//{
+		//	m_signal[i] = scaleFactor*result1.dequeue();
+		//	if (m_signal[i] >= 128.0 || m_signal[i] < -128) {
+		//		qDebug() << "*" << m_signal[i];
+		//	}
+		//	/*m_signal[i] = 5.0*qCos(2*3.14*50*i*(1/48000.0));*/
+		//	/*out << m_signal[i];*/
+		//}
+		//m_signalLen = i;
 
-		m_signalLock.unlock();
+		//m_signalLock.unlock();
 		//===================================
 
 		// IIR滤波============================
