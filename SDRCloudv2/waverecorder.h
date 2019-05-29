@@ -7,7 +7,7 @@
 #include <QAudioFormat>
 #include "wavfile.h"
 //#define WAVE_FORMAT_PCM 1
-#define WAVE_FILE_BUFFER_SIZE 	16777216 // 4MB
+#define WAVE_FILE_BUFFER_SIZE 	10*16777216 // 40MB
 //typedef quint32 DWORD;
 //typedef quint16 WORD;
 //

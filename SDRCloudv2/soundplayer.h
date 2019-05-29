@@ -28,7 +28,7 @@ public:
 	void setRecordFileName(QString name);
 	void setRecordState(bool on);
 	void clearRecord();
-
+	//void saveSound();
 private:
 	void initSoundPlayer();
 	void m_updateAudioBuf();	// 此函数会阻塞不应该直接调用

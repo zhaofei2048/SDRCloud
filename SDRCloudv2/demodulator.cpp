@@ -8,7 +8,7 @@
 #include <QFile>
 #include <QDataStream>
 #include "fir_256k_48k.h"
-
+#include "fir_128k_48k.h"
 
 Demodulator::Demodulator(RtlDevice *dongle, QObject *parent)
 	: QObject(parent),
@@ -63,7 +63,7 @@ void Demodulator::getData(QVector<qreal>& data)
 	data.resize(0);
 	for (int i = 0; i < m_signalLen; i++)
 	{
-		data.append(m_signal[i] * scaleFactor);
+		data.append(m_signal[i] * scaleFactor*100);
 	}
 	m_signalLock.unlock();
 }
@@ -76,7 +76,7 @@ void Demodulator::getDataByChar(char data[], quint32 &len)
 	double temp = 0;
 	for (i = 0; i < m_signalLen; i++)
 	{
-		temp = m_signal[i] * scaleFactor;
+		temp = m_signal[i] * scaleFactor*100;
 		if (temp > 127) {
 			//data[i] = data[i - 1];
 			data[i] = char(127);
@@ -145,13 +145,26 @@ void Demodulator::m_demodFM()
 			preQ = Q;
 		}
 		result1Count = result1.count();
-		qDebug() << "demodulating count = " << result1Count << ":" << result1[9];
+		//qDebug() << "demodulating count = " << result1Count << ":" << result1[9];
 
 		// 对解调后的信号再次进行下采样==================================
+		//********************************************************************************\\
+		//========FM调频广播 信号 参数start===============================================\\
+		//int L = 3;
+		//int M = 16;
+		//qreal *coeff = (qreal *)FIR_256K_TO_48K;
+		//quint32 coeff_len = (quint32)FIR_256K_TO_48K_LEN;
+		//========FM调频广播 信号 参数end==================================================//
+
+		//========APT信号 参数start================================================\\
+
 		int L = 3;
-		int M = 16;
-		qreal *coeff = (qreal *)FIR_256K_TO_48K;
-		quint32 coeff_len = (quint32)FIR_256K_TO_48K_LEN;
+		int M = 8;
+		qreal *coeff = (qreal *)FIR_128K_TO_48K;
+		quint32 coeff_len = (quint32)FIR_128K_TO_48K_LEN;
+		//========APT信号 参数end=================================================//
+		//*********************************************************************************//
+
 		m_signalLock.lockForWrite();
 		resample_fast(result1, result1Count, L,
 			M, coeff, coeff_len, m_signal, m_signalLen);

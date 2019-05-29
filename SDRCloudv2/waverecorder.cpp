@@ -46,24 +46,12 @@ WaveRecorder::~WaveRecorder()
 
 void WaveRecorder::saveWave()
 {
-	//wh.riffSize += m_curPos;
-	//wh.dataSize = m_curPos;
-	//qDebug() << "recoring audio...";
-	//QFile f(m_fileName);
-	//f.open(QFile::WriteOnly);
-	////char info[] = "hello world";
-	////f.write(info);
-	//f.write((char *)&wh, 44);	// Ö±½Ó44B
-	//qDebug() << QString::number(wh.dataSize);
-	//f.write(m_buffer, wh.dataSize);
-	//f.close();
-	//m_curPos = 0;
+
 	if (isSaved == false) {
 		wavFile.writeWave(m_fileName, m_format, m_buffer, m_curPos);
 		m_curPos = 0;
 		isSaved = true;
 	}
-	//qDebug() << "wav header size:" << QString::number(sizeof(wh));
 }
 
 void WaveRecorder::setRecordFileName(QString name)

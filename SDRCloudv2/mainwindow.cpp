@@ -358,6 +358,8 @@ MainWindow::~MainWindow()
 	//	fclose(m_logFile);
 	//	m_logFile = nullptr;
 	//}
+	//delete m_player;
+	//m_player = nullptr;
 	if (m_dongle->getState() != RtlDevice::CLOSED)
 	{
 		closeRTL(true);
@@ -505,7 +507,14 @@ void MainWindow::recordStateChanged(int)
 {
 	qDebug() << "record state changed";
 	QVariant state = comboxRecord->currentData(Qt::UserRole);
-	m_player->setRecordState(state.toBool());
+	bool on = state.toBool();
+	if (on == true) {
+		pgbRecord->setValue(75);
+	}
+	else {
+		pgbRecord->setValue(0);
+	}
+	m_player->setRecordState(on);
 }
 
 void MainWindow::clearRecordWave()

@@ -173,6 +173,9 @@ void generateSyncWave(qreal *&hn, int &len, const int Fs)
 		len = _len;
 		return;
 	}
+	else {
+		_Fs = Fs;
+	}
 	
 	int samplesPerWord = round(double(Fs) / Fw);
 	int samplesPerLine = round(double(Fs) / Fw * lineLength);
@@ -192,6 +195,44 @@ void generateSyncWave(qreal *&hn, int &len, const int Fs)
 	int i = 0;
 	for (i = startPos; i <= endPos; i=i+samplesPerPulse) {
 		for (int j = i; j <= (i + samplesPerPulse / 2); j++) {
+			hn[j] = 1;
+		}
+	}
+}
+
+// 生成一个待匹配信号的波形，无需预先分配空间
+void generateSyncWave_s(qreal *&hn, int &len, const int Fs)
+{
+	// 为了性能，在此缓存hn
+	static int _Fs = 0;
+	static int _len = 0;
+
+	if (Fs == _Fs) {	// 请确保hn不要被外界修改
+		len = _len;
+		return;
+	}
+	else {
+		_Fs = Fs;
+	}
+
+	int samplesPerWord = round(double(Fs) / Fw);
+	int samplesPerLine = round(double(Fs) / Fw * lineLength);
+
+	int samplesPerPulse = 4 * samplesPerWord;
+
+	len = syncLength * samplesPerWord;
+	_len = len;	// 缓存
+	hn = new qreal[len];
+	for (int i = 0; i < len; i++) {
+		hn[i] = -1;
+	}
+
+	int startPos = samplesPerPulse;
+	int endPos = startPos + (numPulse - 1)*samplesPerPulse;
+
+	int i = 0;
+	for (i = startPos; i <= endPos; i = i + samplesPerPulse) {
+		for (int j = i; j < (i + samplesPerPulse / 2); j++) {	// 这里肯定能整除
 			hn[j] = 1;
 		}
 	}
@@ -235,6 +276,7 @@ bool findSync(qreal *signal, const int signalLen, const qreal *hn, const int hLe
 			peaks[p].coe = coe;
 		}
 	}
+
 	if (peaks[p].index + samplesPerLine <= signalLen)
 	{
 		p++;

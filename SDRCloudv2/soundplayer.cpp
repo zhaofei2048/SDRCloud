@@ -16,6 +16,8 @@ SoundPlayer::~SoundPlayer()
 {
 	updateAudioBufThread.quit();
 	updateAudioBufThread.wait();
+	// 用于防止程序意外终止，
+	//m_waveRecorder->saveWave();	// 如果当前缓冲区已被存储，此函数不会发生作用，因此是安全的
 	destroy();
 }
 
@@ -35,6 +37,12 @@ void SoundPlayer::stopPlay()
 	//buf.clear();
 	//m_pcmIODevice->stopUpdate();
 }
+
+//void SoundPlayer::saveSound()
+//{
+//	// 用于防止程序意外终止，
+//	m_waveRecorder->saveWave();
+//}
 
 void SoundPlayer::destroy()
 {
