@@ -333,7 +333,7 @@ void ImageViewer::importWave()
 void ImageViewer::startDecode(bool)
 {
 	unsigned char *imgarr = nullptr;
-	int imgSize = 0;
+	unsigned int imgSize = 0;
 	int width;
 	int height;
 

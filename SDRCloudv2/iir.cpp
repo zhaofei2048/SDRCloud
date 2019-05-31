@@ -45,27 +45,32 @@ void downsampleWithFir(const unsigned char *data_in, const quint32 len_in, qreal
 	// 算了还是先用double型的系数吧
 
 	static qreal pre[FIR_LEN*2];	// 最需要缓存2*FIR_LEN个数据
-	static int len_pre = 0;
-	static int last = 2*FIR_LEN;	// 辅助记住信号的开头
+	static quint32 len_pre = 0;	// 上一次剩余数据的长度
+	static quint32 last = 2*FIR_LEN;	// 辅助记住信号的开头
 	//static int I = 0;
 	//static int Q = 0;	// I， Q信号滤波计算当前的起始位置
 	quint32 leni = len_I;
 	quint32 lenq = len_Q;
 
-	int i = 0;
-	int jI = 0;
-	int jQ = 0;
-	int r = 0;
-	int s = 0;
+	qint64 i = 0;
+	qint64 jI = 0;
+	qint64 jQ = 0;
+	quint32 r = 0;
+	quint32 s = 0;
 	qreal sum = 0;
 
 	//qDebug() << "downsampling with filter:" << len_in;
+	//qDebug() << "len_pre=" << len_pre;
+	//qDebug() << "leni=" << leni;
+	//qDebug() << "lenq=" << lenq;
+	// 重置len_pre为0
+	len_pre = 0;
 
 	// 先对I路信号抗混叠滤波并完成下采样
-	int h = 0;	// 为相乘求和的头位置
-	int t = 0;	// 为当前计算位置，也是相乘求和的尾
-	for (t = 0; t < leni; t = t + D) {
-		if (t - FIR_LEN > 0) {					//signal:	x(0) x(1) x(2) x(3)...
+	qint64 h = 0;	// 为相乘求和的头位置
+	qint64 t = 0;	// 为当前计算位置，也是相乘求和的尾
+	for (t = ceil(FIR_LEN / double(D))*D; t < leni; t = t + D) {
+		if (t > FIR_LEN) {					//signal:	x(0) x(1) x(2) x(3)...
 			// 如果滤波器的尾部已经进入到信号里//coeff:			 h(0) h(1) h(2)...
 			h = t - FIR_LEN;
 		}
@@ -82,6 +87,7 @@ void downsampleWithFir(const unsigned char *data_in, const quint32 len_in, qreal
 		r = r + 2;
 	}
 
+
 	h = t - FIR_LEN;
 	if (h < leni && h >= 0) {
 		// data_in中有剩余的I路数据需要搬移到pre中缓存
@@ -92,13 +98,14 @@ void downsampleWithFir(const unsigned char *data_in, const quint32 len_in, qreal
 		for (i = leni - 1; i >= h; i--) {
 			pre[jI] = signalI(i);
 			jI = jI - 2;
+			len_pre++;
 		}
 	}
-
+	
 	// 再对Q路信号抗混叠滤波并完成下采样
 	s = 1;
-	for (t = 0; t < lenq; t = t + D) {
-		if (t - FIR_LEN > 0) {					//signal:	x(0) x(1) x(2) x(3)...
+	for (t = ceil(FIR_LEN/double(D))*D; t < lenq; t = t + D) {
+		if (t > FIR_LEN) {					//signal:	x(0) x(1) x(2) x(3)...
 			// 如果滤波器的尾部已经进入到信号里//coeff:			 h(0) h(1) h(2)...
 			h = t - FIR_LEN;
 		}
@@ -116,21 +123,33 @@ void downsampleWithFir(const unsigned char *data_in, const quint32 len_in, qreal
 	}
 
 	h = t - FIR_LEN;
-	if (h < leni && h >= 0) {
+	if (h < lenq && h >= 0) {
 		// data_in中有剩余的Q路数据需要搬移到pre中缓存
 		//if (len_in % 2 == 0) {	// 说明末尾的是I路信号
 
 		//}
 		jQ = 2*FIR_LEN - 1;
-		for (i = leni - 1; i >= h; i--) {
+		for (i = lenq - 1; i >= h; i--) {
 			pre[jQ] = signalQ(i);
 			jQ = jQ - 2;
+			len_pre++;
 		}
 	}
+	if (jI > jQ) {
+		// 总是保证第一个是I路的
+		pre[jI] = pre[jI + 2];
+		jI = jI - 2;
+		len_pre++;
+	}
 	Q_ASSERT(r - s == 1 || r - s == -1);
-	Q_ASSERT(jI-jQ==1 || jI-jQ==-1);
+	Q_ASSERT(jI < jQ);
 	len_out = r > s ? s : r;	// len_out = min(r,s)
-	last = ((jI > jQ ? jI : jQ) + 1);	// 记录pre中数据的开始位置
+	//qDebug() << "len_out=" << len_out;
+	last = jQ + 1;	// 记录pre中数据的开始位置
+	Q_ASSERT(len_pre == 2 * FIR_LEN - last);
+	
+	
+	
 }
 //============================================================================================================
 

@@ -27,8 +27,7 @@ static char logFileName[] = "E:/workspace/Qt/SDRCloud/applogs/applog.txt";
 //		abort();
 //	}
 //}
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 	/*qInstallMessageHandler(myMessageOutput);*/
 	//qDebug() << "start";
 	QApplication a(argc, argv);

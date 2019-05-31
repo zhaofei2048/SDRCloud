@@ -5,6 +5,8 @@
  // * Fstop = 6000Hz
  // * Apass = 1
  // * Astop = 40
+//const int FIR_128K_TO_48K_LEN = 1;
+//const double FIR_128K_TO_48K[496] = { 1 };
 const int FIR_128K_TO_48K_LEN = 496;
 const double FIR_128K_TO_48K[496] = {
    0.005712266620067,0.0006490310592918,0.0006810937775803,0.0007098650438889,

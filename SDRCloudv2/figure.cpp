@@ -112,6 +112,7 @@ void Figure::m_updateFigureBuf()
 void Figure::updatePsdWave()
 {
 	m_figLock.lockForRead();
+	//qDebug() << "plot len = " << m_figureBufY.length();
 	this->graph(0)->setData(m_figureX, m_figureY, true);
 	m_figLock.unlock();
 	this->replot();

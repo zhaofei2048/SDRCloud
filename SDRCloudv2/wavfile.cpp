@@ -342,10 +342,10 @@ bool WavFile::readWave(const QString fileName, qreal * data, qint64 & len, QAudi
 	qDebug() << "sample size = " << sampleSize;
 
 	if (sampleSize == 8) {
-		qint8 temp;
+		quint8 temp;
 		while (ds.atEnd() == false) {
 			ds >> temp;
-			data[i] = qreal(temp)/128.0;
+			data[i] = (qreal(temp)-128.0)/128.0;
 			i++;
 		}
 		len = i;

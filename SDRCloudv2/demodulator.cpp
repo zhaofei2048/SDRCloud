@@ -9,13 +9,16 @@
 #include <QDataStream>
 #include "fir_256k_48k.h"
 #include "fir_128k_48k.h"
+#include <classicalpse.h> 
+
+
 
 Demodulator::Demodulator(RtlDevice *dongle, QObject *parent)
 	: QObject(parent),
 	m_preQdivI(0.0),
 	m_signalLen(0),
 	m_dongle(dongle),
-	scaleFactor(20)
+	scaleFactor(100)
 {
 	demodWorker = new DemodWorker();	// 这个不会被重复执行，所以不用判断是否重复实例化
 	demodWorker->moveToThread(&m_demodThread);
@@ -61,9 +64,9 @@ void Demodulator::getData(QVector<qreal>& data)
 	// 考虑这里是否需要一定的条件等待，避免重复读取数据
 	m_signalLock.lockForRead();
 	data.resize(0);
-	for (int i = 0; i < m_signalLen; i++)
+	for (quint32 i = 0; i < m_signalLen; i++)
 	{
-		data.append(m_signal[i] * scaleFactor*100);
+		data.append(m_signal[i] * scaleFactor);
 	}
 	m_signalLock.unlock();
 }
@@ -72,11 +75,11 @@ void Demodulator::getDataByChar(char data[], quint32 &len)
 {
 	// 考虑这里是否需要一定的条件等待，避免重复读取数据
 	m_signalLock.lockForRead();
-	int i = 0;
+	quint32 i = 0;
 	double temp = 0;
 	for (i = 0; i < m_signalLen; i++)
 	{
-		temp = m_signal[i] * scaleFactor*100;
+		temp = m_signal[i] * scaleFactor;
 		if (temp > 127) {
 			//data[i] = data[i - 1];
 			data[i] = char(127);
@@ -88,8 +91,8 @@ void Demodulator::getDataByChar(char data[], quint32 &len)
 		else {
 			data[i] = char(temp);
 		}
-		
 	}
+	//qDebug() << "getDataByCharlen=" << len;
 	len = i;
 	m_signalLock.unlock();
 }
@@ -128,9 +131,30 @@ void Demodulator::m_demodFM()
 
 		m_dongle->getData(m_unDemodSignal);	//	这里提取硬件里的原始IQ数据，注意这里有可能阻塞
 											// m_unDemodSignal中的数在-128-127之间
+
+		// 计算功率谱************************
+
+		//psdBufLock.lockForWrite();
+		//quint32 psd_N = m_unDemodSignal.count();
+		//int psd_L = 1024;
+		//
+		//splab::Vector<double> psd_x;
+		//int j = 0;
+		//psd_x.resize(psd_N / 2);
+		//for (int i = 0; i < psd_N; i = i + 2) {
+		//	psd_x[j++] = (double(m_unDemodSignal[i]));
+		//}
+		//int psd_K = psd_N / 2 / psd_L;
+		//if (psd_K != 0) {
+		//	psdBuf = splab::bartlettPSE(psd_x, psd_K, psd_L);
+		//}
+
+		//psdBufLock.unlock();
+		//***********************************
+
 		// 注:这种解调算法计算量大，精度高
-		
-		for (int i = 0; i < m_unDemodSignal.count() - 1; i = i + 2)
+		int i = 0;
+		for (i = 0; i < m_unDemodSignal.count() - 1; i = i + 2)
 		{
 			// FM解调
 			I = m_unDemodSignal[i];
@@ -144,7 +168,11 @@ void Demodulator::m_demodFM()
 			preI = I;
 			preQ = Q;
 		}
+		//qDebug() << m_unDemodSignal.count() << ":" << i;
 		result1Count = result1.count();
+
+
+
 		//qDebug() << "demodulating count = " << result1Count << ":" << result1[9];
 
 		// 对解调后的信号再次进行下采样==================================

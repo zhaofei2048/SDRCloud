@@ -41,17 +41,17 @@ void demod_core(double data_in[], unsigned int len_in, double data_out[], unsign
 // 近似包络解调算法,为了节省内存,data_in和data_out可以指向同一片内存并且data_in将会被覆盖
 void demodAM(int Fs, double data_in[], unsigned int len_in, double data_out[], unsigned int & len_out)
 {
-	static double phi = 2 * pi*Fc / double(Fs);
-	static double cosphi2 = 2*cos(phi);
-	static double sinphi = sin(phi);
+	double phi = 2 * pi*Fc / double(Fs);
+	double cosphi2 = 2*cos(phi);
+	double sinphi = sin(phi);
 
 	
-	static double xi_pre = data_in[0];
-	static double xi2_pre = xi_pre*xi_pre;
+	double xi_pre = data_in[0];
+	double xi2_pre = xi_pre*xi_pre;
 	
 	double xi = 0.0;
 	double xi2 = 0.0;
-	int i = 0;
+	unsigned int i = 0;
 	for (i = 1; i < len_in; i++) {
 		xi = data_in[i];
 		xi2 = xi * xi;
@@ -91,12 +91,12 @@ void resample_fast(QQueue<qreal> &x, const quint32 len_in, const int L,
 	//static QQueue<qreal> pre;
 	//QQueue<qreal> x;
 	// t代表当前计算位置
-	quint32 t = 0;
-	quint32 h = 0;
+	qint64 t = 0;
+	qint64 h = 0;
 	qint32 rem = 0;
-	quint32 i = 0;
-	int j = 0;
-	int ii = 0;
+	qint64 i = 0;
+	qint64 j = 0;
+	qint64 ii = 0;
 	qreal sum = 0;
 	//int input_len = 0;
 	quint32 interpolated_len = len_in * L;	// 请确保这个结果不会溢出2^32
@@ -106,7 +106,7 @@ void resample_fast(QQueue<qreal> &x, const quint32 len_in, const int L,
 
 	//}
 
-	for (t = 0; t <= interpolated_len; t = t + M) {	// t要按M递增，因为这对应了间隔为M的抽取
+	for (t = ceil(coeff_len/double(M))*M; t <= interpolated_len; t = t + M) {	// t要按M递增，因为这对应了间隔为M的抽取
 		// 首先卷积时滤波器的头位置,卷积滤波器的尾位置为t
 		if (t - coeff_len > 0) {
 			h = t - coeff_len;
@@ -119,12 +119,14 @@ void resample_fast(QQueue<qreal> &x, const quint32 len_in, const int L,
 			h = 0;
 		}
 		sum = 0;
-		ii = h / L;
+		ii = h / L; 
 		// 计算[h,t)间间隔为L的乘积和
 		for (i = h; i < t; i = i + L,ii++) {
-			sum = x[ii] * coeff[i - h];
+			sum += x[ii] * coeff[i - h];
 		}
 		y[j++] = sum;	// t = j*M
+		//Q_ASSERT(sum != 0);
+		//y[j++] = cos(2 * 3.14*500.0*j / 48000.0);
 	}
 	len_out = j;
 

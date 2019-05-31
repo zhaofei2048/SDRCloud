@@ -63,7 +63,7 @@ void SoundPlayer::initSoundPlayer()
 	format.setSampleSize(8);
 	format.setCodec("audio/pcm");
 	format.setByteOrder(QAudioFormat::LittleEndian);
-	format.setSampleType(QAudioFormat::SignedInt);
+	format.setSampleType(QAudioFormat::UnSignedInt);
 
 	m_waveRecorder = new WaveRecorder("E:/workspace/Qt/SDRCloud/waves/wave02.wav", format);
 	m_pcmIODevice = new PCMIODevice(m_waveRecorder);
@@ -110,7 +110,7 @@ void SoundPlayer::handleStateChanged(QAudio::State newState)
 	switch (newState) {
 	case QAudio::IdleState:
 		// Finished playing (no more data)
-		qDebug() << "audio play on idle";
+		qDebug() << "*********audio play on idle*********";
 		//m_audio->stop();
 		/*m_sourceFile.close();*/
 		/*delete m_audio;*/
@@ -122,7 +122,7 @@ void SoundPlayer::handleStateChanged(QAudio::State newState)
 			// Error handling
 			qDebug() << "Error on audio play";
 		}
-		qDebug() << "player stopped";
+		qDebug() << "************player stopped***********";
 		break;
 
 	default:

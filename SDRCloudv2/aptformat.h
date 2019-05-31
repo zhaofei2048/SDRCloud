@@ -14,17 +14,18 @@ const int syncLength = 39;	// sync A同步信号有39个words
 const double pi = 3.1415926;
 
 typedef struct Peak {
-	int index;
+	unsigned int index;
 	double coe;
 }Peak;
 
 void loadWave(const QString fileName, qreal *&data, qint64 &len, int &Fs);
 void aptToImage(int Fs, double *data, unsigned int len_in, unsigned char *&img, unsigned int &imgSize, unsigned int &width);
 void generateSyncWave(qreal *&hn, int &len, const int Fs);
-bool findSync(qreal *signal, const int signalLen, const qreal *hn, const int hLen, const int Fs, int *&index, int &indexLen);
-bool aptDecode(ImageViewer *viewer, const QString fileName, unsigned char *&img, int &imgSize, int &width, int &height, bool isSync);
+bool findSync(qreal *signal, const unsigned int signalLen, const qreal *hn, const int hLen, const int Fs, unsigned int *&index, int &indexLen);
+bool aptDecode(ImageViewer *viewer, const QString fileName, unsigned char *&img, unsigned int &imgSize, int &width, int &height, bool isSync);
 bool arrToImage(const unsigned char *imgarr, const int width, const int height, QImage &image);
-
+void align_signal(double *signal, unsigned int &signal_len, unsigned int *index, int indexLen);
+void normalize_contrast(double *signal, const unsigned int signalLen, unsigned char *img, const unsigned int imgSize);
 
 
 #endif // !APTFORMAT_H

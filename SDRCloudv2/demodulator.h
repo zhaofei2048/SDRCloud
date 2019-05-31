@@ -10,6 +10,9 @@
 #include <QVector>
 #include <QReadWriteLock>
 #include <QThread>
+#include <vectormath.h>
+
+
 
 QT_FORWARD_DECLARE_CLASS(RtlDevice)
 
@@ -44,6 +47,8 @@ private:
 	qreal m_preQdivI;	// Q(n-1)/I(n-1)
 	QThread m_demodThread;
 	DemodWorker *demodWorker;
+	QReadWriteLock psdBufLock;
+	splab::Vector<double> psdBuf;
 	bool m_isRunning;
 	int scaleFactor;
 };

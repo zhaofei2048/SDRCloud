@@ -29,6 +29,9 @@ qint64 PCMIODevice::readData(char * data, qint64 maxlen)
 	qint64 chunk = 0;
 	qint64 pos = 0;	// data的当前位置指针
 	/*qDebug() << "audio read data" + QString::number(maxlen);*/
+
+	qint64 pre_curRead = curRead;
+	//qDebug() << "read max len = " << maxlen;
 	
 	mutex.lock();
 	if (isForWrite == true)
@@ -49,11 +52,25 @@ qint64 PCMIODevice::readData(char * data, qint64 maxlen)
 		curRead = (curRead + chunk) % DEFAULT_MAX_AUDIO_BUFFER_SIZE;	
 	}
 
-	validDataLength -= (quint64)pos;
+	validDataLength -= pos;
 	// 读取到的音频数据都在data里，且其长度为pos
-	if (isRecordOn) {
-		m_recorder->cacheWave(data, pos);	// 对音频数据进行缓存
+	//for (int i = 0; i < pos; i++) {
+	//	data[i] = char(100 * cos(2 * 3.14 * 1200 * i / 48000.0));
+	//	//data[i] = char(-30);
+	//}
+
+	for (quint32 i = 0; i < pos; i++) {	// 这里主要是为了将有符号数转为无符号数。
+		if (data[i] >= 0) {
+			data[i] = data[i] - 128;
+		}
+		else {
+			data[i] = data[i] + 128;
+		}
 	}
+	if (isRecordOn) {
+		m_recorder->cacheWave(data, pos);	// 对音 频数据进行缓存
+	}
+	Q_ASSERT((pre_curRead + pos) % DEFAULT_MAX_AUDIO_BUFFER_SIZE == curRead);
 	mutex.lock();
 	isForWrite = true;
 	notForRead.wakeAll();
@@ -61,18 +78,23 @@ qint64 PCMIODevice::readData(char * data, qint64 maxlen)
 
 	if (pos == 0)
 	{
-		data[0] = (char)0;
+		data[0] = (char)-128;
 		pos = 1;	// 不能让扬声器进入休眠状态，不然写者会被孤独的锁住
+		qDebug() << "player is free";
 	}
 	//qDebug() << QString::number(pos) + data[0];
+	//qDebug() << "really read len = " << pos;
 	return pos;
 }
-
+//char test_data[16384];
 qint64 PCMIODevice::writeData(const char * data, qint64 len)
 {
 	qint64 chunk = 0;
 	qint64 pos = 0;	// data的当前位置指针
 
+
+	qint64 pre_curWrite = curWrite;
+	//qDebug() << "write len = " << len;
 	mutex.lock();
 	if (isForWrite == false)
 	{
@@ -86,8 +108,10 @@ qint64 PCMIODevice::writeData(const char * data, qint64 len)
 		memcpy(m_buffer + curWrite, data + pos, chunk);
 		curWrite = (curWrite + chunk) % DEFAULT_MAX_AUDIO_BUFFER_SIZE;
 	}
-	validDataLength += quint64(pos);
+	validDataLength += pos;
 
+	Q_ASSERT(len == pos);
+	Q_ASSERT((pre_curWrite + pos) % DEFAULT_MAX_AUDIO_BUFFER_SIZE == curWrite);
 	mutex.lock();
 	isForWrite = false;
 	notForWrite.wakeAll();
